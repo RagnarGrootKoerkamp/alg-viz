@@ -1,0 +1,35 @@
+#+title: Readme
+
+This is a small app to visualize the extension step of the Ko-Aluru
+linear-time suffix array construction algorithm:
+Assuming the /small/ suffixes are already sorted and put and the end of their
+first-character buckets, this shows how the remaining /large/ suffixes are put
+into their places.
+
+See my corresponding [[https://research.curiouscoding.nl/notes/suffix-array-construction/][note]] for more context.
+
+*Usage*:
+
+After installing Rust (see [[https://rustup.rs/]]), ~SDL2~, and ~SDL2_TTF~, clone
+the repo and run
+#+begin_src
+cargo run -- [--save dir] [string]
+#+end_src
+e.g.
+#+begin_src
+cargo run BANANAS-APPLES
+#+end_src
+
+*Keyboard controls*:
+- =SPACE=, =ESC=: go to next frame
+- =Q=: go to last frame, or exit from last frame
+- =X=: abort
+
+[[file:./img/suffix-array.gif]]
+
+*Animations*:
+
+To turn a set of ~bmp~ images into a gif, use:
+#+begin_src
+ffmpeg -y -framerate 1 -i %d.bmp -filter_complex "split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer",fps=1 suffix-array.gif
+#+end_src

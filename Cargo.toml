@@ -1,0 +1,17 @@
+[package]
+name = "suffix-array-construction"
+authors = ["Ragnar Groot Koerkamp"]
+description = "A visualization of the Ko-Aluru suffix array extension algorithm."
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/RagnarGrootKoerkamp/suffix-array-construction"
+license = "MPL-2.0"
+keywords = ["suffix-array"]
+readme = "README.org"
+categories = ["science"]
+default-run = "suffix-array-construction"
+
+[dependencies]
+clap = {version="3.*", features=["derive", "wrap_help"]}
+sdl2 = {version="*", features=["ttf"]}
+lazy_static = "*"

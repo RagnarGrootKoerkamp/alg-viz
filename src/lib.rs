@@ -201,7 +201,7 @@ pub fn draw_highlight_box(
                 .unwrap();
         }
     } else {
-        for margin in 0..=2 {
+        for margin in 1..=3 {
             canvas
                 .draw_rect(Rect::new(
                     x + margin as i32,

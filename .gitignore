@@ -1,2 +1,6 @@
 /target
 img/*.bmp
+img/*/*.bmp
+flamegraph.svg
+perf.data
+perf.data.old

@@ -1,12 +1,16 @@
-#+title: Readme
+#+title: Suffix Array & BWT visualizations
 
-This is a small app to visualize the extension step of the Ko-Aluru
+This is a small app to visualize some string algorithms.
+
+* Ko-Aluru linear time suffix array construction
+
+First, it visualises the extension step of the Ko-Aluru
 linear-time suffix array construction algorithm:
 Assuming the /small/ suffixes are already sorted and put and the end of their
 first-character buckets, this shows how the remaining /large/ suffixes are put
 into their places.
 
-See my corresponding [[https://research.curiouscoding.nl/notes/suffix-array-construction/][note]] for more context.
+See my corresponding [[https://research.curiouscoding.nl/notes/suffix-array-construction/][blogpost]] for more context.
 
 *Usage*:
 
@@ -27,7 +31,27 @@ cargo run BANANAS-APPLES
 
 [[file:./img/suffix-array.gif]]
 
-*Animations*:
+* Burrows–Wheeler transform & FM Index
+
+The second visualisation is of the BWT and FM index.
+- First the rotations are listed and sorted.
+- Then the last-to-first correspondence is shown.
+- Then character counts and the occurrences array are computed.
+- Lastly, it's shown how to compute the range starting with a given query.
+
+*Usage*:
+
+#+begin_src
+cargo run --bin bwt -- [--save dir] [string] [--query <query>]
+#+end_src
+e.g.
+#+begin_src
+cargo run BANANAS-APPLES --query ANA
+#+end_src
+
+[[file:./img/bwt.gif]]
+
+* Animations
 
 To turn a set of ~bmp~ images into a gif, use:
 #+begin_src

@@ -74,58 +74,48 @@ fn main() {
     draw_background(canvas);
     draw_s(canvas);
     draw_sa(&sa, canvas);
-    wait_for_key(canvas);
+    present(canvas);
 
     for j in 0..n {
-        canvas.clear();
-        draw_background(canvas);
-        draw_s(canvas);
-        draw_sa(&sa, canvas);
-
-        // highlight the current index i and the one before
         let i = sa[j].unwrap();
-        draw_highlight(1, 4 + j, Color::RED, canvas);
-        draw_highlight(3 + i, 0, Color::RED, canvas);
-        draw_highlight(3 + i - 1, 0, Color::BLUE, canvas);
-
-        wait_for_key(canvas);
-
-        if i == 0 || is_small(i - 1) {
-            continue;
-        }
-
-        // copied from above
-        {
+        let step0 = |canvas: &mut Canvas, sa: &Vec<Option<usize>>| {
             canvas.clear();
             draw_background(canvas);
             draw_s(canvas);
             draw_sa(&sa, canvas);
 
             // highlight the current index i and the one before
-            let i = sa[j].unwrap();
             draw_highlight(1, 4 + j, Color::RED, canvas);
             draw_highlight(3 + i, 0, Color::RED, canvas);
             draw_highlight(3 + i - 1, 0, Color::BLUE, canvas);
+        };
+        step0(canvas, &sa);
+
+        present(canvas);
+
+        if i == 0 || is_small(i - 1) {
+            continue;
         }
 
         // highlight the new character, and the first empty position in that bucket
         let c = s[i - 1];
-        draw_highlight(3 + i - 1, 1, Color::BLUE, canvas);
         let new_j = (buckets[c as usize - 1]..buckets[c as usize])
             .find(|&j| sa[j].is_none())
             .unwrap();
-        draw_highlight(1, 4 + new_j, Color::BLUE, canvas);
+        let step1 = |canvas: &mut Canvas| {
+            draw_highlight(3 + i - 1, 1, Color::BLUE, canvas);
+            draw_highlight(1, 4 + new_j, Color::BLUE, canvas);
+        };
+        step0(canvas, &sa);
+        step1(canvas);
 
-        wait_for_key(canvas);
+        present(canvas);
 
         sa[new_j] = Some(i - 1);
+        step0(canvas, &sa);
+        step1(canvas);
 
-        canvas.clear();
-        draw_background(canvas);
-        draw_s(canvas);
-        draw_sa(&sa, canvas);
-
-        wait_for_key(canvas);
+        present(canvas);
     }
 
     canvas.clear();
@@ -133,5 +123,5 @@ fn main() {
     draw_s(canvas);
     draw_sa(&sa, canvas);
 
-    wait_for_key(canvas);
+    present(canvas);
 }

@@ -45,7 +45,7 @@ fn main() {
     {
         input(canvas);
         draw_text(5, 2, "Input string S.", canvas);
-        wait_for_key(canvas);
+        present(canvas);
     }
 
     // 2. Draw rotations
@@ -69,7 +69,7 @@ fn main() {
                 canvas,
             );
         }
-        wait_for_key(canvas);
+        present(canvas);
     }
 
     // 3. Draw sorted rotations
@@ -94,7 +94,7 @@ fn main() {
                 canvas,
             );
         }
-        wait_for_key(canvas);
+        present(canvas);
     }
 
     // 4. Draw sorted rotations, with first and last column highlighted
@@ -127,7 +127,7 @@ fn main() {
     {
         sorted_rotations(canvas);
         draw_text(5, 2, "Store the first and last column.", canvas);
-        wait_for_key(canvas);
+        present(canvas);
     }
 
     // 5. Last-to-first correspondence
@@ -191,10 +191,11 @@ fn main() {
         // Index in alph of max char.
         let ci = char_count.iter().position_max().unwrap();
         for k in 0..char_count[ci] {
-            for step in 0..2 {
+            // NOTE: We skip first steps here.
+            for step in 1..2 {
                 ltf(ci, k, step, canvas);
                 draw_text(5, 2, "For each char, L and F are sorted the same.", canvas);
-                wait_for_key(canvas);
+                present(canvas);
             }
         }
         //let ltf = |canvas: &mut Canvas| ltf(alph.len(), canvas);
@@ -229,7 +230,7 @@ fn main() {
             "Count number of smaller characters for each c",
             canvas,
         );
-        wait_for_key(canvas);
+        present(canvas);
     }
 
     let char_counts = |canvas: &mut Canvas| char_counts(alph.len(), canvas);
@@ -281,7 +282,7 @@ fn main() {
             "Count number of occurrences of c in L at pos < j",
             canvas,
         );
-        wait_for_key(canvas);
+        present(canvas);
     }
     let occurrences = |canvas: &mut Canvas| occurrences(alph.len(), canvas);
 
@@ -336,6 +337,11 @@ fn main() {
             draw_label(3 + s, n + 6, &j_begin_end[step - s].1.to_string(), canvas);
         }
 
+        // cyan shading for matched chars.
+        for j in j_begin..j_end {
+            draw_string(3, 3 + j, &s2[sa[j]..sa[j] + step], |_| Color::CYAN, canvas);
+        }
+
         // start/end labels in row j
         draw_highlight_box(3, 3 + j_begin, n, j_end - j_begin, Color::BLACK, canvas);
         if j_begin < j_end {
@@ -364,13 +370,20 @@ fn main() {
             draw_highlight(n + 6 + ci, 3 + j_end, Color::BLUE, canvas);
         }
 
-        wait_for_key(canvas);
+        // NOTE: We save each query step twice since this is a tricky part and
+        // queries are typically short.
+        save(canvas);
+        present(canvas);
     };
     for step in 0..=q.len() {
         query(step, canvas);
     }
 
     let query = |canvas: &mut Canvas| query(ql, canvas);
+    // Keep the last frame for a bit longer.
+    query(canvas);
+    query(canvas);
+    query(canvas);
     query(canvas);
     wait_for_end();
 }

@@ -248,7 +248,13 @@ pub fn draw_string_with_labels(
 
 static mut SKIP_TO_END: bool = false;
 
-pub fn wait_for_key(canvas: &mut Canvas) {
+pub fn present(canvas: &mut Canvas) {
+    save(canvas);
+    canvas.present();
+    wait_for_key(false);
+}
+
+pub fn save(canvas: &mut sdl2::render::Canvas<Window>) {
     if let Some(mut path) = ARGS.save.clone() {
         static FRAME: AtomicUsize = AtomicUsize::new(0);
 
@@ -273,9 +279,10 @@ pub fn wait_for_key(canvas: &mut Canvas) {
         surf.save_bmp(path).unwrap();
         FRAME.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
     }
-    canvas.present();
+}
 
-    if unsafe { SKIP_TO_END } {
+pub fn wait_for_key(last: bool) {
+    if !last && unsafe { SKIP_TO_END } {
         return;
     }
     //Keyboard events
@@ -294,7 +301,10 @@ pub fn wait_for_key(canvas: &mut Canvas) {
                     keycode: Some(key), ..
                 } => match key {
                     Keycode::Escape | Keycode::Space => {
-                        break 'outer;
+                        // Nothing; this is the last frame.
+                        if !last {
+                            break 'outer;
+                        }
                     }
                     Keycode::Q => {
                         unsafe {
@@ -311,60 +321,10 @@ pub fn wait_for_key(canvas: &mut Canvas) {
     });
 }
 
+pub fn wait() {
+    wait_for_key(false);
+}
+
 pub fn wait_for_end() {
-    // if let Some(mut path) = ARGS.save.clone() {
-    //     static FRAME: AtomicUsize = AtomicUsize::new(0);
-
-    //     let pixel_format = canvas.default_pixel_format();
-    //     let mut pixels = canvas.read_pixels(canvas.viewport(), pixel_format).unwrap();
-    //     let (width, height) = canvas.output_size().unwrap();
-    //     let pitch = pixel_format.byte_size_of_pixels(width as usize);
-    //     let surf = sdl2::surface::Surface::from_data(
-    //         pixels.as_mut_slice(),
-    //         width,
-    //         height,
-    //         pitch as u32,
-    //         pixel_format,
-    //     )
-    //     .unwrap();
-
-    //     std::fs::create_dir_all(&path).unwrap();
-    //     let frame = FRAME.load(std::sync::atomic::Ordering::Acquire);
-    //     path.push(format!("{frame:02}"));
-    //     path.set_extension("bmp");
-    //     surf.save_bmp(path).unwrap();
-    //     FRAME.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
-    // }
-
-    //Keyboard events
-    let sleep_duration = 0.1;
-    SDL_CONTEXT.with(|sdl| 'outer: loop {
-        for event in sdl.event_pump().unwrap().poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::X),
-                    ..
-                } => {
-                    panic!("Running aborted by user!");
-                }
-                Event::KeyDown {
-                    keycode: Some(key), ..
-                } => match key {
-                    Keycode::Escape | Keycode::Space => {
-                        // Nothing; this is the last frame.
-                    }
-                    Keycode::Q => {
-                        unsafe {
-                            SKIP_TO_END = true;
-                        }
-                        break 'outer;
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
-        }
-        ::std::thread::sleep(Duration::from_secs_f32(sleep_duration));
-    });
+    wait_for_key(true);
 }

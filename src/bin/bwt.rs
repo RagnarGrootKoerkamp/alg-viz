@@ -2,6 +2,56 @@ use itertools::Itertools;
 use sdl2::pixels::Color;
 use suffix_array_construction::*;
 
+#[derive(Ord, PartialEq, PartialOrd, Eq, Clone, Copy)]
+enum State {
+    Init,
+    Rotations,
+    Sorted,
+    FirstLast,
+    // One state per occurrence of the most frequent character
+    LfMap(usize),
+    // One state per char
+    Counts(usize),
+    // Finalize the char counting
+    CountsDone,
+    // Occurrences, one per char
+    Occ(usize),
+    // Finalize occurrences
+    OccDone,
+    // Query, one per char +1 to wrap
+    Query(usize),
+    End,
+}
+
+fn states(s: &[u8], q: &[u8]) -> Vec<State> {
+    use State::*;
+    let mut v = vec![Init, Rotations, Sorted, FirstLast];
+
+    let mut cnts = [0; 256];
+    for &c in s {
+        cnts[c as usize] += 1;
+    }
+    let num_chars = cnts.iter().filter(|&&x| x > 0).count();
+    let max_char_cnt = *cnts.iter().max().unwrap();
+
+    for i in 0..max_char_cnt {
+        v.push(LfMap(i));
+    }
+    for i in 0..num_chars {
+        v.push(Counts(i));
+    }
+    v.push(CountsDone);
+    for i in 0..num_chars {
+        v.push(Occ(i));
+    }
+    v.push(OccDone);
+    for i in 0..=q.len() {
+        v.push(Query(i));
+    }
+    v.push(State::End);
+    v
+}
+
 const SMALL_COLOUR: Color = Color::GREEN;
 //const LARGE_COLOUR: Color = Color::RGB(244, 113, 116);
 const LARGE_COLOUR: Color = Color::RGB(240, 240, 240);

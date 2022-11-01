@@ -4,19 +4,38 @@ use suffix_array_construction::*;
 const SMALL_COLOUR: Color = Color::GREEN;
 const LARGE_COLOUR: Color = Color::RGB(244, 113, 116);
 
-fn main() {
-    let mut s = ARGS
-        .input
-        .clone()
-        .unwrap_or("GTCCCGATGTCATGTCAGGA".to_owned());
-    s.push('$');
-    let s = s.as_bytes();
+#[derive(Ord, PartialEq, PartialOrd, Eq, Clone, Copy)]
+enum RowState {
+    Step0,
+    Step1,
+    Step2,
+}
+
+#[derive(Ord, PartialEq, PartialOrd, Eq, Clone, Copy)]
+enum State {
+    Init,
+    Row(usize, RowState),
+    End,
+}
+
+fn states(n: usize) -> Vec<State> {
+    let mut v = vec![State::Init];
+    for j in 0..n {
+        v.extend([
+            State::Row(j, RowState::Step0),
+            State::Row(j, RowState::Step1),
+            State::Row(j, RowState::Step2),
+        ]);
+    }
+    v.push(State::End);
+    v
+}
+
+fn draw(s: &[u8], state: State, canvas: &mut Canvas) {
+    canvas.clear();
+    draw_background(canvas);
+
     let n = s.len();
-
-    let w = n + 4;
-    let h = n + 5;
-
-    let ref mut canvas = canvas(w, h);
 
     let is_small = |i| i == n - 1 || s[i..] < s[i + 1..];
     let is_small_color = |i| {
@@ -27,9 +46,22 @@ fn main() {
         }
     };
 
-    let draw_s = |canvas: &mut Canvas| {
-        draw_string_with_labels(3, 1, s, is_small_color, canvas);
-    };
+    // Positioning
+
+    // Top left of SA.
+    let psa = Pos(3, 3);
+    // First entry of j column
+    let cj = psa.left(3);
+    // First entry of SA column
+    let csa = psa.left(2);
+
+    // Top left of S at the top.
+    let ps = Pos(3, 1);
+    // The first label of S.
+    let ri = ps.up(1);
+
+    // Draw the string at the top.
+    draw_string_with_labels(ps, s, is_small_color, canvas);
 
     let mut buckets = [0 as usize; 256];
     for &c in s.iter() {
@@ -49,79 +81,88 @@ fn main() {
         }
     }
 
-    let draw_sa = |sa: &Vec<Option<usize>>, canvas: &mut Canvas| {
-        draw_label(0, 3, "j", canvas);
-        draw_label(1, 3, "SA", canvas);
-        for j in 0..n {
-            draw_label(0, 4 + j, &j.to_string(), canvas);
-            if let Some(i) = sa[j] {
-                draw_label(1, 4 + j, &i.to_string(), canvas);
-                draw_string(3, 4 + j, &s[i..], |i2| is_small_color(i + i2), canvas);
-            } else {
-                // Find the first letter for this bucket
-                let bucket = buckets
-                    .iter()
-                    .enumerate()
-                    .find(|&(_, &cnt)| cnt > j)
-                    .unwrap()
-                    .0 as u8;
-                draw_label(1, 4 + j, &'-'.to_string(), canvas);
-                draw_char_box(3, 4 + j, bucket, LARGE_COLOUR, canvas);
+    // Compute the SA as far as needed
+    let mut new_j = 0;
+    match state {
+        State::Init => {}
+        State::Row(rj, _) => {
+            for j in 0..=rj {
+                let i = sa[j].unwrap();
+                if i == 0 || is_small(i - 1) {
+                    continue;
+                }
+                let c = s[i - 1];
+                new_j = (buckets[c as usize - 1]..buckets[c as usize])
+                    .find(|&j| sa[j].is_none())
+                    .unwrap();
+                sa[new_j] = Some(i - 1);
             }
         }
-    };
-
-    draw_background(canvas);
-    draw_s(canvas);
-    draw_sa(&sa, canvas);
-    present(canvas);
-
-    for j in 0..n {
-        let i = sa[j].unwrap();
-        let step0 = |canvas: &mut Canvas, sa: &Vec<Option<usize>>| {
-            canvas.clear();
-            draw_background(canvas);
-            draw_s(canvas);
-            draw_sa(&sa, canvas);
-
-            // highlight the current index i and the one before
-            draw_highlight(1, 4 + j, Color::RED, canvas);
-            draw_highlight(3 + i, 0, Color::RED, canvas);
-            draw_highlight(3 + i - 1, 0, Color::BLUE, canvas);
-        };
-        step0(canvas, &sa);
-
-        present(canvas);
-
-        if i == 0 || is_small(i - 1) {
-            continue;
-        }
-
-        // highlight the new character, and the first empty position in that bucket
-        let c = s[i - 1];
-        let new_j = (buckets[c as usize - 1]..buckets[c as usize])
-            .find(|&j| sa[j].is_none())
-            .unwrap();
-        let step1 = |canvas: &mut Canvas| {
-            draw_highlight(3 + i - 1, 1, Color::BLUE, canvas);
-            draw_highlight(1, 4 + new_j, Color::BLUE, canvas);
-        };
-        step0(canvas, &sa);
-        step1(canvas);
-
-        present(canvas);
-
-        sa[new_j] = Some(i - 1);
-        step0(canvas, &sa);
-        step1(canvas);
-
-        present(canvas);
+        State::End => sa = final_sa.iter().map(|&i| Some(i)).collect(),
     }
 
-    canvas.clear();
-    draw_background(canvas);
-    draw_s(canvas);
-    draw_sa(&sa, canvas);
+    // Draw the SA
+    draw_label(cj.up(1), "j", canvas);
+    draw_label(csa.up(1), "SA", canvas);
+    for j in 0..n {
+        draw_label(cj.down(j), &j.to_string(), canvas);
+        if let Some(i) = sa[j] {
+            draw_label(csa.down(j), &i.to_string(), canvas);
+            draw_string(psa.down(j), &s[i..], |i2| is_small_color(i + i2), canvas);
+        } else {
+            // Find the first letter for this bucket
+            let bucket = buckets
+                .iter()
+                .enumerate()
+                .find(|&(_, &cnt)| cnt > j)
+                .unwrap()
+                .0 as u8;
+            draw_label(csa.down(j), &'-'.to_string(), canvas);
+            draw_char_box(psa.down(j), bucket, LARGE_COLOUR, canvas);
+        }
+    }
 
+    // If needed, draw highlight boxes
+    if let State::Row(j, rs) = state {
+        let i = sa[j].unwrap();
+
+        let skip = i == 0 || is_small(i - 1);
+        // Do not show the SA entry yet.
+        if rs < RowState::Step2 && !skip {
+            sa[new_j] = None;
+        }
+
+        // highlight the current index i and the one before
+        draw_highlight(csa.down(j), Color::RED, canvas);
+        draw_highlight(ri.right(i), Color::RED, canvas);
+        if i > 0 {
+            draw_highlight(ri.right(i - 1), Color::BLUE, canvas);
+        }
+
+        if rs > RowState::Step0 {
+            if skip {
+                return;
+            }
+            draw_highlight(ps.right(i - 1), Color::BLUE, canvas);
+            draw_highlight(csa.down(new_j), Color::BLUE, canvas);
+        }
+    }
     present(canvas);
+}
+
+fn main() {
+    let mut s = ARGS
+        .input
+        .clone()
+        .unwrap_or("GTCCCGATGTCATGTCAGGA".to_owned());
+    s.push('$');
+    let s = s.as_bytes();
+    let n = s.len();
+
+    let ref mut canvas = canvas(n + 4, n + 4);
+    let states = states(n);
+    for state in states {
+        draw(s, state, canvas);
+    }
+    wait_for_end();
 }

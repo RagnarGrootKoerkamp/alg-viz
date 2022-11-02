@@ -93,7 +93,7 @@ impl Pos {
 // Cell size
 const CS: u32 = 30;
 const BACKGROUND: Color = Color::WHITE;
-const LETTER_COLOUR: Color = Color::BLACK;
+const LETTER_COLOR: Color = Color::BLACK;
 
 #[derive(Parser)]
 #[clap(author, about)]
@@ -171,10 +171,10 @@ fn write_label(x: i32, y: i32, ha: HAlign, va: VAlign, text: &str, canvas: &mut 
     });
 }
 
-pub fn draw_label(Pos(x, y): Pos, label: &str, canvas: &mut Canvas) {
+pub fn draw_label_color(Pos(x, y): Pos, label: &str, color: Color, canvas: &mut Canvas) {
     let x = x as i32 * CS as i32;
     let y = y as i32 * CS as i32;
-    canvas.set_draw_color(LETTER_COLOUR);
+    canvas.set_draw_color(color);
     write_label(
         x + CS as i32 / 2,
         y + CS as i32 / 2,
@@ -184,10 +184,15 @@ pub fn draw_label(Pos(x, y): Pos, label: &str, canvas: &mut Canvas) {
         canvas,
     );
 }
+
+pub fn draw_label(pos: Pos, label: &str, canvas: &mut Canvas) {
+    draw_label_color(pos, label, LETTER_COLOR, canvas)
+}
+
 pub fn draw_text(Pos(x, y): Pos, label: &str, canvas: &mut Canvas) {
     let x = x as i32 * CS as i32;
     let y = y as i32 * CS as i32;
-    canvas.set_draw_color(LETTER_COLOUR);
+    canvas.set_draw_color(LETTER_COLOR);
     write_label(
         x,
         y + CS as i32 / 2,
@@ -208,7 +213,7 @@ pub fn draw_char_box(Pos(x, y): Pos, c: u8, color: Color, canvas: &mut Canvas) {
     canvas.set_draw_color(Color::BLACK);
     canvas.draw_rect(Rect::new(x, y, CS, CS)).unwrap();
     // letter
-    canvas.set_draw_color(LETTER_COLOUR);
+    canvas.set_draw_color(LETTER_COLOR);
     write_label(
         x + CS as i32 / 2,
         y + CS as i32 / 2,
@@ -223,7 +228,18 @@ pub fn draw_highlight_box(Pos(x, y): Pos, w: usize, h: usize, color: Color, canv
     canvas.set_draw_color(color);
     let x = x as i32 * CS as i32;
     let y = y as i32 * CS as i32;
-    if h == 0 {
+    if w == 0 {
+        for margin in 0..=2 {
+            canvas
+                .draw_rect(Rect::new(
+                    x - margin as i32,
+                    y as i32,
+                    2 * margin,
+                    h as u32 * CS,
+                ))
+                .unwrap();
+        }
+    } else if h == 0 {
         for margin in 0..=2 {
             canvas
                 .draw_rect(Rect::new(
@@ -265,7 +281,7 @@ pub fn draw_string_with_labels(
     color: impl Fn(usize) -> Color,
     canvas: &mut Canvas,
 ) {
-    draw_label(Pos(2, 0), "i", canvas);
+    draw_label(Pos(x - 1, y - 1), "i", canvas);
     for i in 0..s.len() {
         draw_label(Pos(x + i, y - 1), &i.to_string(), canvas);
     }

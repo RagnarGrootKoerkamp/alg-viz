@@ -49,11 +49,11 @@ struct BWT<'a> {
     q: &'a [u8],
     n: usize,
     ql: usize,
-    alph: Vec<u8>,
     s2: Vec<u8>,
-    sa: Vec<usize>,
+    alph: Vec<u8>,
     char_count: Vec<usize>,
     char_start: Vec<usize>,
+    sa: Vec<usize>,
     occ: Vec<Vec<i32>>,
     j_begin_end: Vec<(usize, usize)>,
 }
@@ -116,11 +116,11 @@ impl<'a> BWT<'a> {
             q,
             n,
             ql,
-            alph,
             s2,
-            sa,
+            alph,
             char_count,
             char_start,
+            sa,
             occ,
             j_begin_end,
         }
@@ -197,8 +197,8 @@ impl<'a> BWT<'a> {
         let pqt = pq.down(2);
         // Column for s and t
         let cst = psa.left(1);
-        // End of remainder of query
-        let pqend = pq.right(n - 1);
+        // Past-the-end of remainder of query
+        let pqend = pq.right(n);
 
         // Static data
 
@@ -249,8 +249,6 @@ impl<'a> BWT<'a> {
             return;
         }
 
-        draw_label(cj.up(1), "j", canvas);
-        draw_label(ca.up(1), "A", canvas);
         draw_label(pfirst.up(1), "F", canvas);
         draw_label(plast.up(1), "L", canvas);
         for j in 0..n {
@@ -312,7 +310,7 @@ impl<'a> BWT<'a> {
         // 6. character counts
         {
             draw_label(rsigma.left(1), "σ", canvas);
-            draw_label(pcnt.left(1), "C(σ)", canvas);
+            draw_label(pcnt.left(1), "C", canvas);
 
             // Draw chars 0..=k
             let (k, iscount) = match state {
@@ -329,6 +327,9 @@ impl<'a> BWT<'a> {
                     draw_highlight(psa.down(count), Color::RED, canvas);
                 }
                 draw_highlight_box(psa.down(count), 1, 0, Color::RED, canvas);
+            }
+            if k == self.alph.len() {
+                draw_highlight_box(pfirst.down(n), 1, 0, Color::RED, canvas);
             }
             if let State::Counts(_) = state {
                 draw_highlight_box(rsigma.right(k), 1, 2, Color::RED, canvas);
@@ -348,6 +349,7 @@ impl<'a> BWT<'a> {
         // 7. Occurrences
         {
             // Draw the first k+1 chars
+            draw_label(pocc.left(1).up(1), "Occ", canvas);
             let (k, isocc) = match state {
                 State::Occ(step) => (step, true),
                 State::OccDone => (self.alph.len(), true),
@@ -392,7 +394,7 @@ impl<'a> BWT<'a> {
             draw_label(pq.left(1), "Q", canvas);
             draw_string(pq, q_done, |i| to_c(i == 0), canvas);
             draw_string(
-                pqend.right(1).left(q.len() - step),
+                pqend.left(q.len() - step),
                 q_remaining,
                 |_| LARGE_COLOUR,
                 canvas,
@@ -439,9 +441,9 @@ impl<'a> BWT<'a> {
             // the occurrences of the next char to process.
             if step < ql {
                 let c = q[ql - 1 - step];
-                draw_label(pqend.up(1), "c", canvas);
+                draw_label(pqend.left(1).up(1), "c", canvas);
                 let ci = self.alph.iter().position(|&cc| cc == c).unwrap();
-                draw_highlight(pqend, Color::BLUE, canvas);
+                draw_highlight(pqend.left(1), Color::BLUE, canvas);
                 draw_highlight_box(rsigma.right(ci), 1, 2, Color::BLUE, canvas);
                 draw_label(rsigma.right(ci).down(2), "+", canvas);
                 if j_begin < j_end {

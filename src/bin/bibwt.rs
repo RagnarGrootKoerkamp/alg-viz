@@ -267,8 +267,8 @@ impl<'a> BWT<'a> {
         let pocc_r = pcnt_r.down(2);
 
         // Query string
-        let pq = psa.down(n + 1);
-        let pq_r = psa_r.down(n + 1);
+        let pq = psa.down(n + 2);
+        let pq_r = psa_r.down(n + 2);
         // Query s
         let pqs = pq.down(1);
         let pqs_r = pq_r.down(1).left(1);
@@ -837,36 +837,36 @@ impl<'a> BWT<'a> {
                 for ci in 0..ci {
                     let d = self.occ[ci][range.end] - self.occ[ci][range.start];
                     draw_label_color(
-                        pocc.down(n + 2).right(ci),
+                        pocc.down(n + 3).right(ci),
                         &d.to_string(),
                         Color::RED,
                         canvas,
                     );
                 }
                 draw_label_color(
-                    pocc.down(n + 2).left(1),
+                    pocc.down(n + 3).left(1),
                     &cnt.to_string(),
                     Color::RED,
                     canvas,
                 );
-                draw_highlight(pocc.down(n + 2).left(1), Color::RED, canvas);
+                draw_highlight(pocc.down(n + 3).left(1), Color::RED, canvas);
             } else {
                 for ci in 0..ci {
                     let d = self.occ_r[ci][range_r.end] - self.occ_r[ci][range_r.start];
                     draw_label_color(
-                        pocc_r.down(n + 2).right(ci),
+                        pocc_r.down(n + 3).right(ci),
                         &d.to_string(),
                         Color::RED,
                         canvas,
                     );
                 }
                 draw_label_color(
-                    pocc_r.down(n + 2).left(1),
+                    pocc_r.down(n + 3).left(1),
                     &cnt.to_string(),
                     Color::RED,
                     canvas,
                 );
-                draw_highlight(pocc_r.down(n + 2).left(1), Color::RED, canvas);
+                draw_highlight(pocc_r.down(n + 3).left(1), Color::RED, canvas);
             }
             if qs == ComputeSecond {
                 if extend_left {
@@ -908,20 +908,20 @@ impl<'a> BWT<'a> {
                     let d = self.occ[ci][range.end] - self.occ[ci][range.start];
                     cnt += d;
                     draw_label_color(
-                        pocc.down(n + 3).right(ci),
+                        pocc.down(n + 4).right(ci),
                         &d.to_string(),
                         Color::RED,
                         canvas,
                     );
                 }
                 draw_label_color(
-                    pocc.down(n + 3).left(1),
+                    pocc.down(n + 4).left(1),
                     &cnt.to_string(),
                     Color::RED,
                     canvas,
                 );
 
-                draw_highlight(pocc.down(n + 3).left(1), Color::RED, canvas);
+                draw_highlight(pocc.down(n + 4).left(1), Color::RED, canvas);
                 draw_highlight(pqt_r, Color::RED, canvas);
                 draw_label(pnext_r.down(2), &tt.to_string(), canvas);
                 draw_highlight(pnext_r.down(2), Color::RED, canvas);
@@ -930,19 +930,19 @@ impl<'a> BWT<'a> {
                     let d = self.occ_r[ci][range_r.end] - self.occ_r[ci][range_r.start];
                     cnt += d;
                     draw_label_color(
-                        pocc_r.down(n + 2).right(ci),
+                        pocc_r.down(n + 4).right(ci),
                         &d.to_string(),
                         Color::RED,
                         canvas,
                     );
                 }
                 draw_label_color(
-                    pocc_r.down(n + 2).left(1),
+                    pocc_r.down(n + 4).left(1),
                     &cnt.to_string(),
                     Color::RED,
                     canvas,
                 );
-                draw_highlight(pocc_r.down(n + 3).left(1), Color::RED, canvas);
+                draw_highlight(pocc_r.down(n + 4).left(1), Color::RED, canvas);
                 draw_highlight(pqt, Color::RED, canvas);
                 draw_label(pnext.down(2), &tt.to_string(), canvas);
                 draw_highlight(pnext.down(2), Color::RED, canvas);
@@ -971,7 +971,7 @@ fn main() {
     let q = ARGS.query.clone().unwrap_or("GTCC".to_string());
     let q = q.as_bytes();
 
-    let ref mut canvas = canvas(s.len() + 12 + 2 * s_stats(s).0, s.len() + 8);
+    let ref mut canvas = canvas(s.len() + 12 + 2 * s_stats(s).0, s.len() + 9);
     let bwt = BWT::new(s, q);
     for state in bwt.states() {
         bwt.draw(state, canvas);

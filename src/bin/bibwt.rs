@@ -9,10 +9,16 @@ enum QueryStep {
     PreviousDone,
     HighlightChar,
     HighlightMatches,
+    EquivalenceFirst,
     CountFirst,
+    SmallerCountFirst,
     ExtendFirst,
+    SmallerWindowSecond,
+    EquivalenceSecond,
     CountSecond,
-    ExtendSecond,
+    ComputeSecond,
+    ExtendStartSecond,
+    ExtendEndSecond,
 }
 use QueryStep::*;
 
@@ -172,10 +178,16 @@ impl<'a> BWT<'a> {
                 PreviousDone,
                 HighlightChar,
                 HighlightMatches,
+                EquivalenceFirst,
                 CountFirst,
+                SmallerCountFirst,
                 ExtendFirst,
+                SmallerWindowSecond,
+                EquivalenceSecond,
                 CountSecond,
-                ExtendSecond,
+                ComputeSecond,
+                ExtendStartSecond,
+                ExtendEndSecond,
             ] {
                 v.push(Query(i, qs));
             }
@@ -278,7 +290,7 @@ impl<'a> BWT<'a> {
             return;
         }
 
-        // 2. Forward SA
+        // 2. Fwd
         if let RightSA(_) = state {
         } else {
             draw_label(cj.up(1), "j", canvas);
@@ -604,6 +616,16 @@ impl<'a> BWT<'a> {
             let cnext = psa.left(done.start).right(extend_idx);
             let cnext_r = psa_r.left(done.end).right(extend_idx);
 
+            // Next First range
+            let (ss, tt);
+            if extend_left {
+                ss = self.char_start[ci] + self.occ[ci][range.start];
+                tt = self.char_start[ci] + self.occ[ci][range.end];
+            } else {
+                ss = self.char_start[ci] + self.occ_r[ci][range_r.start];
+                tt = self.char_start[ci] + self.occ_r[ci][range_r.end];
+            }
+
             // Highlight the next character.
             draw_label(pnext.up(1), "c", canvas);
             draw_char_box(pnext, next, NEXT_CHAR, canvas);
@@ -648,47 +670,36 @@ impl<'a> BWT<'a> {
             }
 
             // DO THE FIRST EXTEND, IE THE NORMAL BWT ONE.
-            let isfirst = qs == CountFirst || qs == ExtendFirst || true;
 
             // the occurrences of the next char to process.
-            if isfirst {
-                if extend_left {
-                    draw_highlight_box(rsigma.right(ci), 1, 2, Color::BLUE, canvas);
-                    draw_label(rsigma.right(ci).down(2), "+", canvas);
-                    draw_highlight_box(
-                        plast.down(range.start),
-                        1,
-                        range.len(),
-                        Color::BLUE,
-                        canvas,
-                    );
-                    draw_highlight(pocc.right(ci).down(range.start), Color::BLUE, canvas);
-                    draw_highlight(pocc.right(ci).down(range.end), Color::BLUE, canvas);
-                } else {
-                    draw_highlight_box(rsigma_r.right(ci), 1, 2, Color::BLUE, canvas);
-                    draw_label(rsigma_r.right(ci).down(2), "+", canvas);
-                    draw_highlight_box(
-                        plast_r.down(range_r.start),
-                        1,
-                        range_r.len(),
-                        Color::BLUE,
-                        canvas,
-                    );
-                    draw_highlight(pocc_r.right(ci).down(range_r.start), Color::BLUE, canvas);
-                    draw_highlight(pocc_r.right(ci).down(range_r.end), Color::BLUE, canvas);
+            if extend_left {
+                draw_highlight_box(plast.down(range.start), 1, range.len(), Color::BLUE, canvas);
+                for j in ss..tt {
+                    draw_char_box(pfirst.down(j), next, NEXT_CHAR, canvas);
+                }
+            } else {
+                draw_highlight_box(
+                    plast_r.down(range_r.start),
+                    1,
+                    range_r.len(),
+                    Color::BLUE,
+                    canvas,
+                );
+                for j in ss..tt {
+                    draw_char_box(pfirst_r.down(j), next, NEXT_CHAR, canvas);
                 }
             }
-            if qs == CountFirst {
+            if qs == EquivalenceFirst {
                 if extend_left {
                     draw_text(
                         plabel,
-                        "Forward SA: Count #{c} as C[c] + Occ[c][s or t]",
+                        "Fwd: matches in L correspond to matches in F",
                         canvas,
                     );
                 } else {
                     draw_text(
                         plabel,
-                        "Reverse SA: Count #{c} as C[c] + Occr[c][s or t]",
+                        "Rev: matches in Lr correspond to matches in Fr",
                         canvas,
                     );
                 }
@@ -696,17 +707,49 @@ impl<'a> BWT<'a> {
                 return;
             }
 
+            // the occurrences of the next char to process.
+            if extend_left {
+                draw_highlight(pocc.right(ci).down(range.start), Color::BLUE, canvas);
+                draw_highlight(pocc.right(ci).down(range.end), Color::BLUE, canvas);
+            } else {
+                draw_highlight(pocc_r.right(ci).down(range_r.start), Color::BLUE, canvas);
+                draw_highlight(pocc_r.right(ci).down(range_r.end), Color::BLUE, canvas);
+            }
+            if qs == CountFirst {
+                if extend_left {
+                    draw_text(plabel, "Fwd: positions of matches", canvas);
+                } else {
+                    draw_text(plabel, "Rev: positions of matches", canvas);
+                }
+                present(canvas);
+                return;
+            }
+
+            // the occurrences of the next char to process.
+            if extend_left {
+                draw_highlight_box(rsigma.right(ci), 1, 2, Color::BLUE, canvas);
+                draw_label(rsigma.right(ci).down(2), "+", canvas);
+            } else {
+                draw_highlight_box(rsigma_r.right(ci), 1, 2, Color::BLUE, canvas);
+                draw_label(rsigma_r.right(ci).down(2), "+", canvas);
+            }
+            if qs == SmallerCountFirst {
+                if extend_left {
+                    draw_text(plabel, "Fwd: number of smaller chars", canvas);
+                } else {
+                    draw_text(plabel, "Rev: number of smaller chars", canvas);
+                }
+                present(canvas);
+                return;
+            }
+
             // Draw new computed numbers
             if extend_left {
-                let ss = self.char_start[ci] + self.occ[ci][range.start];
-                let tt = self.char_start[ci] + self.occ[ci][range.end];
                 draw_label(pnext.down(1), &ss.to_string(), canvas);
                 draw_label(pnext.down(2), &tt.to_string(), canvas);
                 draw_highlight_box(pnext.down(1), 1, 2, Color::BLUE, canvas);
                 draw_highlight_box(pfirst.down(ss), 1, tt - ss, Color::BLUE, canvas);
             } else {
-                let ss = self.char_start[ci] + self.occ_r[ci][range_r.start];
-                let tt = self.char_start[ci] + self.occ_r[ci][range_r.end];
                 draw_label(pnext_r.down(1), &ss.to_string(), canvas);
                 draw_label(pnext_r.down(2), &tt.to_string(), canvas);
                 draw_highlight_box(pnext_r.down(1), 1, 2, Color::BLUE, canvas);
@@ -714,9 +757,9 @@ impl<'a> BWT<'a> {
             }
             if qs == ExtendFirst {
                 if extend_left {
-                    draw_text(plabel, "Forward SA: Extend", canvas);
+                    draw_text(plabel, "Fwd: #smaller + match-positions", canvas);
                 } else {
-                    draw_text(plabel, "Reverse SA: Extend", canvas);
+                    draw_text(plabel, "Rev: #smaller + match-positions", canvas);
                 }
                 present(canvas);
                 return;
@@ -726,11 +769,73 @@ impl<'a> BWT<'a> {
 
             // the occurrences of the next char to process.
             let mut cnt = 0;
-            let cnt_c;
+            if extend_left {
+                for ci in 0..ci {
+                    cnt += self.occ[ci][range.end] - self.occ[ci][range.start];
+                }
+                draw_highlight_box(cnext_r.down(range_r.start), 1, cnt, Color::RED, canvas);
+            } else {
+                for ci in 0..ci {
+                    cnt += self.occ_r[ci][range_r.end] - self.occ_r[ci][range_r.start];
+                }
+                draw_highlight_box(cnext.down(range.start), 1, cnt, Color::RED, canvas);
+            }
+            if qs == SmallerWindowSecond {
+                if extend_left {
+                    draw_text(plabel, "Rev: range shrinks; skip chars < c", canvas);
+                } else {
+                    draw_text(plabel, "Fwd: range shrinks; skip chars < c", canvas);
+                }
+                present(canvas);
+                return;
+            }
+
+            // Equivalence to left column
+            if extend_left {
+                draw_highlight_box(plast.down(range.start), 1, range.len(), Color::RED, canvas);
+            } else {
+                draw_highlight_box(
+                    plast_r.down(range_r.start),
+                    1,
+                    range_r.len(),
+                    Color::RED,
+                    canvas,
+                );
+            }
+            if qs == EquivalenceSecond {
+                if extend_left {
+                    draw_text(plabel, "Rev: equal to #{<c} in forward range", canvas);
+                } else {
+                    draw_text(plabel, "Fwd: equal to #{<c} in reverse range", canvas);
+                }
+                present(canvas);
+                return;
+            }
+
+            // the occurrences of the next char to process.
+            if extend_left {
+                draw_highlight_box(rsigma, ci, 1, Color::RED, canvas);
+                draw_highlight_box(pocc.down(range.start), ci, 1, Color::RED, canvas);
+                draw_highlight_box(pocc.down(range.end), ci, 1, Color::RED, canvas);
+            } else {
+                draw_highlight_box(rsigma_r, ci, 1, Color::RED, canvas);
+                draw_highlight_box(pocc_r.down(range_r.start), ci, 1, Color::RED, canvas);
+                draw_highlight_box(pocc_r.down(range_r.end), ci, 1, Color::RED, canvas);
+            }
+            if qs == CountSecond {
+                if extend_left {
+                    draw_text(plabel, "Rev: Char counts before/after fwd range", canvas);
+                } else {
+                    draw_text(plabel, "Fwd: Char counts before/after rev range", canvas);
+                }
+                present(canvas);
+                return;
+            }
+
+            // the occurrences of the next char to process.
             if extend_left {
                 for ci in 0..ci {
                     let d = self.occ[ci][range.end] - self.occ[ci][range.start];
-                    cnt += d;
                     draw_label_color(
                         pocc.down(n + 2).right(ci),
                         &d.to_string(),
@@ -738,20 +843,90 @@ impl<'a> BWT<'a> {
                         canvas,
                     );
                 }
-                cnt_c = self.occ[ci][range.end] - self.occ[ci][range.start];
                 draw_label_color(
                     pocc.down(n + 2).left(1),
                     &cnt.to_string(),
                     Color::RED,
                     canvas,
                 );
-                draw_highlight_box(rsigma, ci, 1, Color::RED, canvas);
-                draw_highlight_box(plast.down(range.start), 1, range.len(), Color::RED, canvas);
-                draw_highlight_box(cnext_r.down(range_r.start), 1, cnt, Color::RED, canvas);
-                draw_highlight_box(pocc.down(range.start), ci, 1, Color::RED, canvas);
-                draw_highlight_box(pocc.down(range.end), ci, 1, Color::RED, canvas);
+                draw_highlight(pocc.down(n + 2).left(1), Color::RED, canvas);
             } else {
                 for ci in 0..ci {
+                    let d = self.occ_r[ci][range_r.end] - self.occ_r[ci][range_r.start];
+                    draw_label_color(
+                        pocc_r.down(n + 2).right(ci),
+                        &d.to_string(),
+                        Color::RED,
+                        canvas,
+                    );
+                }
+                draw_label_color(
+                    pocc_r.down(n + 2).left(1),
+                    &cnt.to_string(),
+                    Color::RED,
+                    canvas,
+                );
+                draw_highlight(pocc_r.down(n + 2).left(1), Color::RED, canvas);
+            }
+            if qs == ComputeSecond {
+                if extend_left {
+                    draw_text(plabel, "Rev: Total count #{<c} in forward range", canvas);
+                } else {
+                    draw_text(plabel, "Fwd: Total count #{<c} in reverse range", canvas);
+                }
+                present(canvas);
+                return;
+            }
+
+            // Compute start of range
+            let ss;
+            if extend_left {
+                draw_highlight(pqs_r, Color::RED, canvas);
+                ss = range_r.start + cnt;
+                draw_label(pnext_r.down(1), &ss.to_string(), canvas);
+                draw_highlight(pnext_r.down(1), Color::RED, canvas);
+            } else {
+                draw_highlight(pqs, Color::RED, canvas);
+                ss = range.start + cnt;
+                draw_label(pnext.down(1), &ss.to_string(), canvas);
+                draw_highlight(pnext.down(1), Color::RED, canvas);
+            }
+            if qs == ExtendStartSecond {
+                if extend_left {
+                    draw_text(plabel, "Add #{<c} to current start", canvas);
+                } else {
+                    draw_text(plabel, "Add #{<c} to current start", canvas);
+                }
+                present(canvas);
+                return;
+            }
+
+            // Compute end of range
+            let mut cnt = 0;
+            if extend_left {
+                for ci in 0..=ci {
+                    let d = self.occ[ci][range.end] - self.occ[ci][range.start];
+                    cnt += d;
+                    draw_label_color(
+                        pocc.down(n + 3).right(ci),
+                        &d.to_string(),
+                        Color::RED,
+                        canvas,
+                    );
+                }
+                draw_label_color(
+                    pocc.down(n + 3).left(1),
+                    &cnt.to_string(),
+                    Color::RED,
+                    canvas,
+                );
+
+                draw_highlight(pocc.down(n + 3).left(1), Color::RED, canvas);
+                draw_highlight(pqt_r, Color::RED, canvas);
+                draw_label(pnext_r.down(2), &tt.to_string(), canvas);
+                draw_highlight(pnext_r.down(2), Color::RED, canvas);
+            } else {
+                for ci in 0..=ci {
                     let d = self.occ_r[ci][range_r.end] - self.occ_r[ci][range_r.start];
                     cnt += d;
                     draw_label_color(
@@ -761,59 +936,22 @@ impl<'a> BWT<'a> {
                         canvas,
                     );
                 }
-                cnt_c = self.occ_r[ci][range_r.end] - self.occ_r[ci][range_r.start];
                 draw_label_color(
                     pocc_r.down(n + 2).left(1),
                     &cnt.to_string(),
                     Color::RED,
                     canvas,
                 );
-                draw_highlight_box(rsigma_r, ci, 1, Color::RED, canvas);
-                draw_highlight_box(
-                    plast_r.down(range_r.start),
-                    1,
-                    range_r.len(),
-                    Color::RED,
-                    canvas,
-                );
-                draw_highlight_box(cnext.down(range.start), 1, cnt, Color::RED, canvas);
-                draw_highlight_box(pocc_r.down(range_r.start), ci, 1, Color::RED, canvas);
-                draw_highlight_box(pocc_r.down(range_r.end), ci, 1, Color::RED, canvas);
-            }
-            if qs == CountSecond {
-                if extend_left {
-                    draw_text(plabel, "Reverse SA: Count #{<c} in forward range", canvas);
-                } else {
-                    draw_text(plabel, "Forward SA: Count #{<c} in reverse range", canvas);
-                }
-                present(canvas);
-                return;
-            }
-
-            // Draw new computed numbers
-            let (ss, tt);
-            if extend_left {
-                draw_highlight(pocc.down(n + 2).left(1), Color::RED, canvas);
-                draw_highlight(pqs_r, Color::RED, canvas);
-                ss = range_r.start + cnt;
-                tt = range_r.start + cnt + cnt_c;
-                draw_label(pnext_r.down(1), &ss.to_string(), canvas);
-                draw_label(pnext_r.down(2), &tt.to_string(), canvas);
-                draw_highlight_box(pnext_r.down(1), 1, 2, Color::RED, canvas);
-            } else {
-                draw_highlight(pocc_r.down(n + 2).left(1), Color::RED, canvas);
-                draw_highlight(pqs, Color::RED, canvas);
-                ss = range.start + cnt;
-                tt = range.start + cnt + cnt_c;
-                draw_label(pnext.down(1), &ss.to_string(), canvas);
+                draw_highlight(pocc_r.down(n + 3).left(1), Color::RED, canvas);
+                draw_highlight(pqt, Color::RED, canvas);
                 draw_label(pnext.down(2), &tt.to_string(), canvas);
-                draw_highlight_box(pnext.down(1), 1, 2, Color::RED, canvas);
+                draw_highlight(pnext.down(2), Color::RED, canvas);
             }
-            if qs == ExtendSecond {
+            if qs == ExtendEndSecond {
                 if extend_left {
-                    draw_text(plabel, "Add #{<c} and #{<=c} to current start", canvas);
+                    draw_text(plabel, "Add #{≤c} to current start", canvas);
                 } else {
-                    draw_text(plabel, "Add #{<c} and #{<=c} to current start", canvas);
+                    draw_text(plabel, "Add #{≤c} to current start", canvas);
                 }
                 present(canvas);
                 return;

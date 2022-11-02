@@ -13,8 +13,8 @@ img/bwt.gif: img/bwt/0.bmp
 	ffmpeg -y -framerate 0.3 -i img/bwt/%d.bmp -filter_complex "split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer",fps=0.3 img/bwt.gif
 
 
-img/bibwt/0.bmp: target/debug/bwt
+img/bibwt/0.bmp: target/debug/bibwt
 	cargo run --bin bibwt -- --save img/bibwt
 
-img/bibwt.gif: img/bwt/0.bmp
+img/bibwt.gif: img/bibwt/0.bmp
 	ffmpeg -y -framerate 0.3 -i img/bibwt/%d.bmp -filter_complex "split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer",fps=0.3 img/bibwt.gif

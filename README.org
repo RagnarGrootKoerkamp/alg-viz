@@ -15,7 +15,7 @@ See my corresponding [[https://research.curiouscoding.nl/notes/suffix-array-cons
 *Usage*:
 
 After installing Rust (see [[https://rustup.rs/]]), ~SDL2~, and ~SDL2_TTF~, clone
-the repo and run
+the repository and run
 #+begin_src
 cargo run -- [--save dir] [string]
 #+end_src
@@ -33,7 +33,7 @@ cargo run BANANAS-APPLES
 
 * Burrows–Wheeler transform & FM Index
 
-The second visualisation is of the BWT and FM index.
+The second visualization is of the BWT and FM index.
 - First the rotations are listed and sorted.
 - Then the last-to-first correspondence is shown.
 - Then character counts and the occurrences array are computed.
@@ -46,10 +46,31 @@ cargo run --bin bwt -- [--save dir] [string] [--query <query>]
 #+end_src
 e.g.
 #+begin_src
-cargo run BANANAS-APPLES --query ANA
+cargo run --bin bwt -- BANANAS-APPLES --query ANA
 #+end_src
 
 [[file:./img/bwt.gif]]
+
+* Bidirectional Burrows-Wheeler transform
+
+Lastly, you can visualize the bidirectional burrows wheeler transform.
+
+This starts in the middle of a query and then first extends to the left, and
+then extends to the right.
+
+*Usage*:
+
+#+begin_src
+cargo run --bin bibwt -- [--save dir] [string] [--query <query>]
+#+end_src
+e.g.
+#+begin_src
+cargo run --bin bibwt -- BANANAS-APPLES --query ANA
+#+end_src
+
+[[file:./img/bwt.gif]]
+
+
 
 * Animations
 

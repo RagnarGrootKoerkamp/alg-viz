@@ -1,11 +1,9 @@
+use crate::{canvas::*, grid::*};
+use itertools::Itertools;
 use std::{cmp::max, ops::Range};
 
-use itertools::Itertools;
-use sdl2::pixels::Color;
-use suffix_array_construction::*;
-
 #[derive(Ord, PartialEq, PartialOrd, Eq, Clone, Copy)]
-enum QueryStep {
+pub enum QueryStep {
     PreviousDone,
     HighlightChar,
     HighlightMatches,
@@ -23,7 +21,7 @@ enum QueryStep {
 use QueryStep::*;
 
 #[derive(Ord, PartialEq, PartialOrd, Eq, Clone, Copy)]
-enum State {
+pub enum State {
     Init,
     // Bool: put last column before first?
     LeftSA(usize),
@@ -50,10 +48,10 @@ fn s_stats(s: &[u8]) -> (usize, usize) {
     (num_chars, max_char_cnt)
 }
 
-const DEFAULT: Color = Color::RGB(240, 240, 240);
-const HIGHLIGHT: Color = Color::GREEN;
-const SOFT_HIGHLIGHT: Color = Color::RGB(180, 250, 180);
-const NEXT_CHAR: Color = Color::RGB(180, 180, 250);
+const DEFAULT: Color = (240, 240, 240);
+const HIGHLIGHT: Color = GREEN;
+const SOFT_HIGHLIGHT: Color = (180, 250, 180);
+const NEXT_CHAR: Color = (180, 180, 250);
 
 fn to_c(condition: bool) -> Color {
     if condition {
@@ -63,7 +61,7 @@ fn to_c(condition: bool) -> Color {
     }
 }
 
-struct BWT<'a> {
+pub struct BiBWT<'a> {
     s: &'a [u8],
     q: &'a [u8],
     s2: Vec<u8>,
@@ -80,8 +78,8 @@ fn rev(s: &[u8]) -> Vec<u8> {
     s.iter().rev().copied().collect()
 }
 
-impl<'a> BWT<'a> {
-    fn new(s: &'a [u8], q: &'a [u8]) -> Self {
+impl<'a> BiBWT<'a> {
+    pub fn new(s: &'a [u8], q: &'a [u8]) -> Self {
         let n = s.len();
         let alph = {
             let mut alph = s.to_vec();
@@ -138,7 +136,7 @@ impl<'a> BWT<'a> {
             })
             .collect_vec();
 
-        BWT {
+        BiBWT {
             s,
             q,
             s2,
@@ -153,7 +151,7 @@ impl<'a> BWT<'a> {
         }
     }
 
-    fn states(&self) -> Vec<State> {
+    pub fn states(&self) -> Vec<State> {
         let mut v = vec![
             Init,
             LeftSA(0),
@@ -221,8 +219,12 @@ impl<'a> BWT<'a> {
         ((j_begin..j_end), (j_begin_r..j_end_r))
     }
 
-    fn draw(&self, state: State, canvas: &mut Canvas) {
-        canvas.clear();
+    pub fn canvas_size(&self) -> (usize, usize) {
+        let n = self.s.len();
+        (n + 12 + 2 * s_stats(self.s).0, n + 9)
+    }
+
+    pub fn draw(&self, state: State, canvas: &mut impl Canvas) -> bool {
         draw_background(canvas);
 
         let s = self.s;
@@ -286,8 +288,7 @@ impl<'a> BWT<'a> {
 
         if state == Init {
             draw_text(plabel, "Input string S.", canvas);
-            present(canvas);
-            return;
+            return true;
         }
 
         // 2. Fwd
@@ -324,8 +325,7 @@ impl<'a> BWT<'a> {
 
             if state == LeftSA(0) {
                 draw_text(plabel, "Forward suffix array", canvas);
-                present(canvas);
-                return;
+                return true;
             }
 
             // Draw moved L column.
@@ -336,13 +336,11 @@ impl<'a> BWT<'a> {
             }
             if state == LeftSA(1) {
                 draw_text(plabel, "Move last column before first", canvas);
-                present(canvas);
-                return;
+                return true;
             }
             if state == LeftSA(2) {
                 draw_text(plabel, "Only show prefixes of the array", canvas);
-                present(canvas);
-                return;
+                return true;
             }
         }
 
@@ -379,8 +377,7 @@ impl<'a> BWT<'a> {
 
             if state == RightSA(0) {
                 draw_text(plabel, "Reverse suffix array", canvas);
-                present(canvas);
-                return;
+                return true;
             }
 
             // Draw moved L column.
@@ -391,19 +388,16 @@ impl<'a> BWT<'a> {
             }
             if state == RightSA(1) {
                 draw_text(plabel, "Move last column after first", canvas);
-                present(canvas);
-                return;
+                return true;
             }
             if state == RightSA(2) {
                 draw_text(plabel, "Only show suffixes of the array", canvas);
-                present(canvas);
-                return;
+                return true;
             }
         }
         if state == BothSA {
             draw_text(plabel, "Forward & Reverse suffix array", canvas);
-            present(canvas);
-            return;
+            return true;
         }
 
         // 6. character counts
@@ -415,11 +409,11 @@ impl<'a> BWT<'a> {
                 let count = self.char_start[i];
                 draw_label(rsigma.right(i), &to_label(c), canvas);
                 draw_label(pcnt.right(i), &count.to_string(), canvas);
-                draw_highlight_box(pfirst.down(count), 1, 0, Color::RED, canvas);
-                draw_highlight_box(pfirst_r.down(count), 1, 0, Color::RED, canvas);
+                draw_highlight_box(pfirst.down(count), 1, 0, RED, canvas);
+                draw_highlight_box(pfirst_r.down(count), 1, 0, RED, canvas);
             }
-            draw_highlight_box(pfirst.down(n), 1, 0, Color::RED, canvas);
-            draw_highlight_box(pfirst_r.down(n), 1, 0, Color::RED, canvas);
+            draw_highlight_box(pfirst.down(n), 1, 0, RED, canvas);
+            draw_highlight_box(pfirst_r.down(n), 1, 0, RED, canvas);
 
             // When RightOcc is shown, duplicate this.
             if state >= RightOcc {
@@ -431,16 +425,15 @@ impl<'a> BWT<'a> {
             }
 
             if state == CharCounts {
-                draw_highlight_box(pfirst, 1, n, Color::RED, canvas);
-                draw_highlight_box(pfirst_r, 1, n, Color::RED, canvas);
-                draw_highlight_box(rsigma, self.alph.len(), 2, Color::RED, canvas);
+                draw_highlight_box(pfirst, 1, n, RED, canvas);
+                draw_highlight_box(pfirst_r, 1, n, RED, canvas);
+                draw_highlight_box(rsigma, self.alph.len(), 2, RED, canvas);
                 draw_text(
                     plabel,
                     "Count number of smaller characters for each c",
                     canvas,
                 );
-                present(canvas);
-                return;
+                return true;
             }
         }
 
@@ -454,11 +447,10 @@ impl<'a> BWT<'a> {
             }
 
             if state == LeftOcc {
-                draw_highlight_box(pocc, self.alph.len(), n + 1, Color::BLUE, canvas);
-                draw_highlight_box(plast, 1, n, Color::BLUE, canvas);
+                draw_highlight_box(pocc, self.alph.len(), n + 1, BLUE, canvas);
+                draw_highlight_box(plast, 1, n, BLUE, canvas);
                 draw_text(plabel, "Count occurrences for L", canvas);
-                present(canvas);
-                return;
+                return true;
             }
 
             draw_label(pocc_r.left(1).up(1), "Occr", canvas);
@@ -473,31 +465,28 @@ impl<'a> BWT<'a> {
             }
 
             if state == RightOcc {
-                draw_highlight_box(pocc_r, self.alph.len(), n + 1, Color::BLUE, canvas);
-                draw_highlight_box(plast_r, 1, n, Color::BLUE, canvas);
+                draw_highlight_box(pocc_r, self.alph.len(), n + 1, BLUE, canvas);
+                draw_highlight_box(plast_r, 1, n, BLUE, canvas);
                 draw_text(plabel, "Count occurrences for Lr", canvas);
-                present(canvas);
-                return;
+                return true;
             }
         };
 
         if let Equivalence(c) = state {
             let s = self.char_start[c];
             let l = self.char_count[c];
-            draw_highlight_box(plast.down(s), 1, l, Color::RED, canvas);
-            draw_highlight_box(pfirst_r.left(1).down(s), 1, l, Color::RED, canvas);
+            draw_highlight_box(plast.down(s), 1, l, RED, canvas);
+            draw_highlight_box(pfirst_r.left(1).down(s), 1, l, RED, canvas);
 
-            draw_highlight_box(plast_r.down(s), 1, l, Color::BLUE, canvas);
-            draw_highlight_box(pfirst.right(1).down(s), 1, l, Color::BLUE, canvas);
+            draw_highlight_box(plast_r.down(s), 1, l, BLUE, canvas);
+            draw_highlight_box(pfirst.right(1).down(s), 1, l, BLUE, canvas);
 
             draw_text(plabel, "Sets of chars before/after c are the same.", canvas);
-            present(canvas);
-            return;
+            return true;
         }
         if state == Pause {
             draw_text(plabel, "Ready for querying", canvas);
-            present(canvas);
-            return;
+            return true;
         }
 
         // Draw query
@@ -548,18 +537,13 @@ impl<'a> BWT<'a> {
             }
 
             // Draw cyan shading for matched chars.
-            draw_string(pq, &q[done.clone()], |_| Color::CYAN, canvas);
-            draw_string(
-                pq_r.left(done.len()),
-                &q[done.clone()],
-                |_| Color::CYAN,
-                canvas,
-            );
+            draw_string(pq, &q[done.clone()], |_| CYAN, canvas);
+            draw_string(pq_r.left(done.len()), &q[done.clone()], |_| CYAN, canvas);
             for j in range.clone() {
                 draw_string(
                     psa.down(j),
                     &self.s2[self.sa[j]..self.sa[j] + step],
-                    |_| Color::CYAN,
+                    |_| CYAN,
                     canvas,
                 );
             }
@@ -567,30 +551,30 @@ impl<'a> BWT<'a> {
                 draw_string(
                     psa_r.left(done.len()).down(j),
                     &self.s2[n + self.sa_r[j] - step..n + self.sa_r[j]],
-                    |_| Color::CYAN,
+                    |_| CYAN,
                     canvas,
                 );
             }
 
             // Black lines around current range.
-            draw_highlight_box(plast.down(range.start), n / 2, 0, Color::BLACK, canvas);
-            draw_highlight_box(plast.down(range.end), n / 2, 0, Color::BLACK, canvas);
+            draw_highlight_box(plast.down(range.start), n / 2, 0, BLACK, canvas);
+            draw_highlight_box(plast.down(range.end), n / 2, 0, BLACK, canvas);
             draw_highlight_box(
                 plast_r.down(range_r.start).left(n / 2 - 1),
                 n / 2,
                 0,
-                Color::BLACK,
+                BLACK,
                 canvas,
             );
             draw_highlight_box(
                 plast_r.down(range_r.end).left(n / 2 - 1),
                 n / 2,
                 0,
-                Color::BLACK,
+                BLACK,
                 canvas,
             );
-            draw_highlight_box(pqs, 1, 2, Color::BLACK, canvas);
-            draw_highlight_box(pqs_r, 1, 2, Color::BLACK, canvas);
+            draw_highlight_box(pqs, 1, 2, BLACK, canvas);
+            draw_highlight_box(pqs_r, 1, 2, BLACK, canvas);
 
             if qs == PreviousDone {
                 if step == 1 {
@@ -602,8 +586,7 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Matching done", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // Position of the next char to be matched.
@@ -638,8 +621,7 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Extend query on the right", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // Highlight matches for the next char.
@@ -665,26 +647,19 @@ impl<'a> BWT<'a> {
             }
             if qs == HighlightMatches {
                 draw_text(plabel, "Matches for next char", canvas);
-                present(canvas);
-                return;
+                return true;
             }
 
             // DO THE FIRST EXTEND, IE THE NORMAL BWT ONE.
 
             // the occurrences of the next char to process.
             if extend_left {
-                draw_highlight_box(plast.down(range.start), 1, range.len(), Color::BLUE, canvas);
+                draw_highlight_box(plast.down(range.start), 1, range.len(), BLUE, canvas);
                 for j in ss..tt {
                     draw_char_box(pfirst.down(j), next, NEXT_CHAR, canvas);
                 }
             } else {
-                draw_highlight_box(
-                    plast_r.down(range_r.start),
-                    1,
-                    range_r.len(),
-                    Color::BLUE,
-                    canvas,
-                );
+                draw_highlight_box(plast_r.down(range_r.start), 1, range_r.len(), BLUE, canvas);
                 for j in ss..tt {
                     draw_char_box(pfirst_r.down(j), next, NEXT_CHAR, canvas);
                 }
@@ -703,17 +678,16 @@ impl<'a> BWT<'a> {
                         canvas,
                     );
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // the occurrences of the next char to process.
             if extend_left {
-                draw_highlight(pocc.right(ci).down(range.start), Color::BLUE, canvas);
-                draw_highlight(pocc.right(ci).down(range.end), Color::BLUE, canvas);
+                draw_highlight(pocc.right(ci).down(range.start), BLUE, canvas);
+                draw_highlight(pocc.right(ci).down(range.end), BLUE, canvas);
             } else {
-                draw_highlight(pocc_r.right(ci).down(range_r.start), Color::BLUE, canvas);
-                draw_highlight(pocc_r.right(ci).down(range_r.end), Color::BLUE, canvas);
+                draw_highlight(pocc_r.right(ci).down(range_r.start), BLUE, canvas);
+                draw_highlight(pocc_r.right(ci).down(range_r.end), BLUE, canvas);
             }
             if qs == CountFirst {
                 if extend_left {
@@ -721,16 +695,15 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Rev: positions of matches", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // the occurrences of the next char to process.
             if extend_left {
-                draw_highlight_box(rsigma.right(ci), 1, 2, Color::BLUE, canvas);
+                draw_highlight_box(rsigma.right(ci), 1, 2, BLUE, canvas);
                 draw_label(rsigma.right(ci).down(2), "+", canvas);
             } else {
-                draw_highlight_box(rsigma_r.right(ci), 1, 2, Color::BLUE, canvas);
+                draw_highlight_box(rsigma_r.right(ci), 1, 2, BLUE, canvas);
                 draw_label(rsigma_r.right(ci).down(2), "+", canvas);
             }
             if qs == SmallerCountFirst {
@@ -739,21 +712,20 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Rev: number of smaller chars", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // Draw new computed numbers
             if extend_left {
                 draw_label(pnext.down(1), &ss.to_string(), canvas);
                 draw_label(pnext.down(2), &tt.to_string(), canvas);
-                draw_highlight_box(pnext.down(1), 1, 2, Color::BLUE, canvas);
-                draw_highlight_box(pfirst.down(ss), 1, tt - ss, Color::BLUE, canvas);
+                draw_highlight_box(pnext.down(1), 1, 2, BLUE, canvas);
+                draw_highlight_box(pfirst.down(ss), 1, tt - ss, BLUE, canvas);
             } else {
                 draw_label(pnext_r.down(1), &ss.to_string(), canvas);
                 draw_label(pnext_r.down(2), &tt.to_string(), canvas);
-                draw_highlight_box(pnext_r.down(1), 1, 2, Color::BLUE, canvas);
-                draw_highlight_box(pfirst_r.down(ss), 1, tt - ss, Color::BLUE, canvas);
+                draw_highlight_box(pnext_r.down(1), 1, 2, BLUE, canvas);
+                draw_highlight_box(pfirst_r.down(ss), 1, tt - ss, BLUE, canvas);
             }
             if qs == ExtendFirst {
                 if extend_left {
@@ -761,8 +733,7 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Rev: #smaller + match-positions", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // DO THE SECOND EXTEND, IE APPEND ON THE BACK.
@@ -773,12 +744,12 @@ impl<'a> BWT<'a> {
                 for ci in 0..ci {
                     cnt += self.occ[ci][range.end] - self.occ[ci][range.start];
                 }
-                draw_highlight_box(cnext_r.down(range_r.start), 1, cnt, Color::RED, canvas);
+                draw_highlight_box(cnext_r.down(range_r.start), 1, cnt, RED, canvas);
             } else {
                 for ci in 0..ci {
                     cnt += self.occ_r[ci][range_r.end] - self.occ_r[ci][range_r.start];
                 }
-                draw_highlight_box(cnext.down(range.start), 1, cnt, Color::RED, canvas);
+                draw_highlight_box(cnext.down(range.start), 1, cnt, RED, canvas);
             }
             if qs == SmallerWindowSecond {
                 if extend_left {
@@ -786,21 +757,14 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Fwd: range shrinks; skip chars < c", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // Equivalence to left column
             if extend_left {
-                draw_highlight_box(plast.down(range.start), 1, range.len(), Color::RED, canvas);
+                draw_highlight_box(plast.down(range.start), 1, range.len(), RED, canvas);
             } else {
-                draw_highlight_box(
-                    plast_r.down(range_r.start),
-                    1,
-                    range_r.len(),
-                    Color::RED,
-                    canvas,
-                );
+                draw_highlight_box(plast_r.down(range_r.start), 1, range_r.len(), RED, canvas);
             }
             if qs == EquivalenceSecond {
                 if extend_left {
@@ -808,19 +772,18 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Fwd: equal to #{<c} in reverse range", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // the occurrences of the next char to process.
             if extend_left {
-                draw_highlight_box(rsigma, ci, 1, Color::RED, canvas);
-                draw_highlight_box(pocc.down(range.start), ci, 1, Color::RED, canvas);
-                draw_highlight_box(pocc.down(range.end), ci, 1, Color::RED, canvas);
+                draw_highlight_box(rsigma, ci, 1, RED, canvas);
+                draw_highlight_box(pocc.down(range.start), ci, 1, RED, canvas);
+                draw_highlight_box(pocc.down(range.end), ci, 1, RED, canvas);
             } else {
-                draw_highlight_box(rsigma_r, ci, 1, Color::RED, canvas);
-                draw_highlight_box(pocc_r.down(range_r.start), ci, 1, Color::RED, canvas);
-                draw_highlight_box(pocc_r.down(range_r.end), ci, 1, Color::RED, canvas);
+                draw_highlight_box(rsigma_r, ci, 1, RED, canvas);
+                draw_highlight_box(pocc_r.down(range_r.start), ci, 1, RED, canvas);
+                draw_highlight_box(pocc_r.down(range_r.end), ci, 1, RED, canvas);
             }
             if qs == CountSecond {
                 if extend_left {
@@ -828,45 +791,24 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Fwd: Char counts before/after rev range", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // the occurrences of the next char to process.
             if extend_left {
                 for ci in 0..ci {
                     let d = self.occ[ci][range.end] - self.occ[ci][range.start];
-                    draw_label_color(
-                        pocc.down(n + 3).right(ci),
-                        &d.to_string(),
-                        Color::RED,
-                        canvas,
-                    );
+                    draw_label(pocc.down(n + 3).right(ci), &d.to_string(), canvas);
                 }
-                draw_label_color(
-                    pocc.down(n + 3).left(1),
-                    &cnt.to_string(),
-                    Color::RED,
-                    canvas,
-                );
-                draw_highlight(pocc.down(n + 3).left(1), Color::RED, canvas);
+                draw_label(pocc.down(n + 3).left(1), &cnt.to_string(), canvas);
+                draw_highlight(pocc.down(n + 3).left(1), RED, canvas);
             } else {
                 for ci in 0..ci {
                     let d = self.occ_r[ci][range_r.end] - self.occ_r[ci][range_r.start];
-                    draw_label_color(
-                        pocc_r.down(n + 3).right(ci),
-                        &d.to_string(),
-                        Color::RED,
-                        canvas,
-                    );
+                    draw_label(pocc_r.down(n + 3).right(ci), &d.to_string(), canvas);
                 }
-                draw_label_color(
-                    pocc_r.down(n + 3).left(1),
-                    &cnt.to_string(),
-                    Color::RED,
-                    canvas,
-                );
-                draw_highlight(pocc_r.down(n + 3).left(1), Color::RED, canvas);
+                draw_label(pocc_r.down(n + 3).left(1), &cnt.to_string(), canvas);
+                draw_highlight(pocc_r.down(n + 3).left(1), RED, canvas);
             }
             if qs == ComputeSecond {
                 if extend_left {
@@ -874,22 +816,21 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Fwd: Total count #{<c} in reverse range", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // Compute start of range
             let ss;
             if extend_left {
-                draw_highlight(pqs_r, Color::RED, canvas);
+                draw_highlight(pqs_r, RED, canvas);
                 ss = range_r.start + cnt;
                 draw_label(pnext_r.down(1), &ss.to_string(), canvas);
-                draw_highlight(pnext_r.down(1), Color::RED, canvas);
+                draw_highlight(pnext_r.down(1), RED, canvas);
             } else {
-                draw_highlight(pqs, Color::RED, canvas);
+                draw_highlight(pqs, RED, canvas);
                 ss = range.start + cnt;
                 draw_label(pnext.down(1), &ss.to_string(), canvas);
-                draw_highlight(pnext.down(1), Color::RED, canvas);
+                draw_highlight(pnext.down(1), RED, canvas);
             }
             if qs == ExtendStartSecond {
                 if extend_left {
@@ -897,8 +838,7 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Add #{<c} to current start", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
 
             // Compute end of range
@@ -907,45 +847,25 @@ impl<'a> BWT<'a> {
                 for ci in 0..=ci {
                     let d = self.occ[ci][range.end] - self.occ[ci][range.start];
                     cnt += d;
-                    draw_label_color(
-                        pocc.down(n + 4).right(ci),
-                        &d.to_string(),
-                        Color::RED,
-                        canvas,
-                    );
+                    draw_label(pocc.down(n + 4).right(ci), &d.to_string(), canvas);
                 }
-                draw_label_color(
-                    pocc.down(n + 4).left(1),
-                    &cnt.to_string(),
-                    Color::RED,
-                    canvas,
-                );
+                draw_label(pocc.down(n + 4).left(1), &cnt.to_string(), canvas);
 
-                draw_highlight(pocc.down(n + 4).left(1), Color::RED, canvas);
-                draw_highlight(pqt_r, Color::RED, canvas);
+                draw_highlight(pocc.down(n + 4).left(1), RED, canvas);
+                draw_highlight(pqt_r, RED, canvas);
                 draw_label(pnext_r.down(2), &tt.to_string(), canvas);
-                draw_highlight(pnext_r.down(2), Color::RED, canvas);
+                draw_highlight(pnext_r.down(2), RED, canvas);
             } else {
                 for ci in 0..=ci {
                     let d = self.occ_r[ci][range_r.end] - self.occ_r[ci][range_r.start];
                     cnt += d;
-                    draw_label_color(
-                        pocc_r.down(n + 4).right(ci),
-                        &d.to_string(),
-                        Color::RED,
-                        canvas,
-                    );
+                    draw_label(pocc_r.down(n + 4).right(ci), &d.to_string(), canvas);
                 }
-                draw_label_color(
-                    pocc_r.down(n + 4).left(1),
-                    &cnt.to_string(),
-                    Color::RED,
-                    canvas,
-                );
-                draw_highlight(pocc_r.down(n + 4).left(1), Color::RED, canvas);
-                draw_highlight(pqt, Color::RED, canvas);
+                draw_label(pocc_r.down(n + 4).left(1), &cnt.to_string(), canvas);
+                draw_highlight(pocc_r.down(n + 4).left(1), RED, canvas);
+                draw_highlight(pqt, RED, canvas);
                 draw_label(pnext.down(2), &tt.to_string(), canvas);
-                draw_highlight(pnext.down(2), Color::RED, canvas);
+                draw_highlight(pnext.down(2), RED, canvas);
             }
             if qs == ExtendEndSecond {
                 if extend_left {
@@ -953,28 +873,9 @@ impl<'a> BWT<'a> {
                 } else {
                     draw_text(plabel, "Add #{≤c} to current start", canvas);
                 }
-                present(canvas);
-                return;
+                return true;
             }
         }
+        false
     }
-}
-
-fn main() {
-    let mut s = ARGS
-        .input
-        .clone()
-        .unwrap_or("GTCCCGATGTCATGTCAGGA".to_owned());
-    s.push('$');
-    let s = s.as_bytes();
-
-    let q = ARGS.query.clone().unwrap_or("GTCC".to_string());
-    let q = q.as_bytes();
-
-    let ref mut canvas = canvas(s.len() + 12 + 2 * s_stats(s).0, s.len() + 9);
-    let bwt = BWT::new(s, q);
-    for state in bwt.states() {
-        bwt.draw(state, canvas);
-    }
-    wait_for_end();
 }

@@ -1,9 +1,8 @@
+use crate::{canvas::*, grid::*};
 use itertools::Itertools;
-use sdl2::pixels::Color;
-use suffix_array_construction::*;
 
 #[derive(Ord, PartialEq, PartialOrd, Eq, Clone, Copy)]
-enum State {
+pub enum State {
     Init,
     Rotations,
     SortedRotations,
@@ -32,9 +31,8 @@ fn s_stats(s: &[u8]) -> (usize, usize) {
     (num_chars, max_char_cnt)
 }
 
-const SMALL_COLOUR: Color = Color::GREEN;
-//const LARGE_COLOUR: Color = Color::RGB(244, 113, 116);
-const LARGE_COLOUR: Color = Color::RGB(240, 240, 240);
+const SMALL_COLOUR: Color = GREEN;
+const LARGE_COLOUR: Color = (240, 240, 240);
 
 fn to_c(condition: bool) -> Color {
     if condition {
@@ -44,7 +42,7 @@ fn to_c(condition: bool) -> Color {
     }
 }
 
-struct BWT<'a> {
+pub struct BWT<'a> {
     s: &'a [u8],
     q: &'a [u8],
     n: usize,
@@ -59,7 +57,7 @@ struct BWT<'a> {
 }
 
 impl<'a> BWT<'a> {
-    fn new(s: &'a [u8], q: &'a [u8]) -> Self {
+    pub fn new(s: &'a [u8], q: &'a [u8]) -> Self {
         let n = s.len();
         let alph = {
             let mut alph = s.to_vec();
@@ -126,7 +124,7 @@ impl<'a> BWT<'a> {
         }
     }
 
-    fn states(&self) -> Vec<State> {
+    pub fn states(&self) -> Vec<State> {
         use State::*;
         let mut v = vec![Init, Rotations, SortedRotations, FirstLast];
 
@@ -155,8 +153,12 @@ impl<'a> BWT<'a> {
         v
     }
 
-    fn draw(&self, state: State, canvas: &mut Canvas) {
-        canvas.clear();
+    pub fn canvas_size(&self) -> (usize, usize) {
+        let n = self.s.len();
+        (n + 7 + s_stats(self.s).0, n + 8)
+    }
+
+    pub fn draw(&self, state: State, canvas: &mut impl Canvas) -> bool {
         draw_background(canvas);
 
         let s = self.s;
@@ -207,8 +209,7 @@ impl<'a> BWT<'a> {
 
         if state == State::Init {
             draw_text(plabel, "Input string S.", canvas);
-            present(canvas);
-            return;
+            return true;
         }
 
         // 2. Draw rotations
@@ -227,8 +228,7 @@ impl<'a> BWT<'a> {
                 );
             }
             draw_text(plabel, "Write down rotations of S.", canvas);
-            present(canvas);
-            return;
+            return true;
         }
 
         // 3. Draw sorted rotations
@@ -245,8 +245,7 @@ impl<'a> BWT<'a> {
                 );
             }
             draw_text(plabel, "Sort rotations via the suffix array of S.", canvas);
-            present(canvas);
-            return;
+            return true;
         }
 
         draw_label(pfirst.up(1), "F", canvas);
@@ -265,8 +264,7 @@ impl<'a> BWT<'a> {
 
         if state == State::FirstLast {
             draw_text(plabel, "Store the first and last column.", canvas);
-            present(canvas);
-            return;
+            return true;
         }
 
         // 5. Last-to-first correspondence
@@ -278,24 +276,24 @@ impl<'a> BWT<'a> {
 
             // Index in alph of max char.
             // Draw a box around char ci.
-            draw_highlight_box(psa.down(start_pos), 2, cnt, Color::RED, canvas);
+            draw_highlight_box(psa.down(start_pos), 2, cnt, RED, canvas);
 
             for i in 0..=k {
                 let start_row = start_pos + i;
                 let idx = self.sa[start_row];
                 let shift_row = self.sa.iter().find_position(|&&x| x == idx + 1).unwrap().0;
                 // Blue box around sa[start_row], sa[target_row], 2nd char in start row, 1st char in target row.
-                draw_highlight(psa.down(start_row), Color::BLACK, canvas);
+                draw_highlight(psa.down(start_row), BLACK, canvas);
                 if i == k {
-                    draw_highlight(psa.down(start_row).right(1), Color::BLUE, canvas);
-                    draw_highlight(ca.down(start_row), Color::BLUE, canvas);
+                    draw_highlight(psa.down(start_row).right(1), BLUE, canvas);
+                    draw_highlight(ca.down(start_row), BLUE, canvas);
                 }
-                draw_highlight(plast.down(shift_row), Color::BLACK, canvas);
+                draw_highlight(plast.down(shift_row), BLACK, canvas);
                 if i == k {
-                    draw_highlight(psa.down(shift_row), Color::BLUE, canvas);
-                    draw_highlight(ca.down(shift_row), Color::BLUE, canvas);
-                    draw_highlight(ps.right(idx), Color::BLACK, canvas);
-                    draw_highlight(ps.right(idx + 1), Color::BLUE, canvas);
+                    draw_highlight(psa.down(shift_row), BLUE, canvas);
+                    draw_highlight(ca.down(shift_row), BLUE, canvas);
+                    draw_highlight(ps.right(idx), BLACK, canvas);
+                    draw_highlight(ps.right(idx + 1), BLUE, canvas);
                 }
             }
             draw_text(
@@ -303,8 +301,7 @@ impl<'a> BWT<'a> {
                 "For each char, L and F are sorted the same.",
                 canvas,
             );
-            present(canvas);
-            return;
+            return true;
         }
 
         // 6. character counts
@@ -323,16 +320,16 @@ impl<'a> BWT<'a> {
                 draw_label(rsigma.right(i), &to_label(c), canvas);
                 draw_label(pcnt.right(i), &count.to_string(), canvas);
                 if k < self.alph.len() && i == k {
-                    draw_highlight(cj.down(count), Color::RED, canvas);
-                    draw_highlight(psa.down(count), Color::RED, canvas);
+                    draw_highlight(cj.down(count), RED, canvas);
+                    draw_highlight(psa.down(count), RED, canvas);
                 }
-                draw_highlight_box(psa.down(count), 1, 0, Color::RED, canvas);
+                draw_highlight_box(psa.down(count), 1, 0, RED, canvas);
             }
             if k == self.alph.len() {
-                draw_highlight_box(pfirst.down(n), 1, 0, Color::RED, canvas);
+                draw_highlight_box(pfirst.down(n), 1, 0, RED, canvas);
             }
             if let State::Counts(_) = state {
-                draw_highlight_box(rsigma.right(k), 1, 2, Color::RED, canvas);
+                draw_highlight_box(rsigma.right(k), 1, 2, RED, canvas);
             }
 
             if iscount {
@@ -341,8 +338,7 @@ impl<'a> BWT<'a> {
                     "Count number of smaller characters for each c",
                     canvas,
                 );
-                present(canvas);
-                return;
+                return true;
             }
         }
 
@@ -357,14 +353,14 @@ impl<'a> BWT<'a> {
             };
             for (i, &c) in self.alph.iter().enumerate().take(k + 1) {
                 if k < self.alph.len() && i == k {
-                    draw_highlight(rsigma.right(k), Color::BLUE, canvas);
+                    draw_highlight(rsigma.right(k), BLUE, canvas);
                 }
                 for j in 0..=n {
                     draw_label(pocc.right(i).down(j), &self.occ[i][j].to_string(), canvas);
                     if j < n && self.s2[self.sa[j] + n - 1] == c {
                         if k < self.alph.len() && i == k {
-                            draw_highlight(plast.down(j), Color::BLUE, canvas);
-                            draw_highlight(pocc.right(k).down(j + 1), Color::BLUE, canvas);
+                            draw_highlight(plast.down(j), BLUE, canvas);
+                            draw_highlight(pocc.right(k).down(j + 1), BLUE, canvas);
                         }
                     }
                 }
@@ -376,8 +372,7 @@ impl<'a> BWT<'a> {
                     "Count number of occurrences of c in L at pos < j",
                     canvas,
                 );
-                present(canvas);
-                return;
+                return true;
             }
         };
 
@@ -421,43 +416,37 @@ impl<'a> BWT<'a> {
                 draw_string(
                     psa.down(j),
                     &self.s2[self.sa[j]..self.sa[j] + step],
-                    |_| Color::CYAN,
+                    |_| CYAN,
                     canvas,
                 );
             }
 
             // start/end labels in row j
-            draw_highlight_box(psa.down(j_begin), n, j_end - j_begin, Color::BLACK, canvas);
+            draw_highlight_box(psa.down(j_begin), n, j_end - j_begin, BLACK, canvas);
             if j_begin < j_end {
                 draw_label(cst.down(j_begin), "s", canvas);
                 draw_label(cst.down(j_end), "t", canvas);
-                draw_highlight_box(psa.down(j_begin), n, j_end - j_begin, Color::BLACK, canvas);
+                draw_highlight_box(psa.down(j_begin), n, j_end - j_begin, BLACK, canvas);
             } else {
                 draw_label(cst.down(j_begin), "s/t", canvas);
-                draw_highlight_box(psa.down(j_begin), n, j_end - j_begin, Color::RED, canvas);
+                draw_highlight_box(psa.down(j_begin), n, j_end - j_begin, RED, canvas);
             }
-            draw_highlight_box(pqs, 1, 2, Color::BLACK, canvas);
+            draw_highlight_box(pqs, 1, 2, BLACK, canvas);
 
             // the occurrences of the next char to process.
             if step < ql {
                 let c = q[ql - 1 - step];
                 draw_label(pqend.left(1).up(1), "c", canvas);
                 let ci = self.alph.iter().position(|&cc| cc == c).unwrap();
-                draw_highlight(pqend.left(1), Color::BLUE, canvas);
-                draw_highlight_box(rsigma.right(ci), 1, 2, Color::BLUE, canvas);
+                draw_highlight(pqend.left(1), BLUE, canvas);
+                draw_highlight_box(rsigma.right(ci), 1, 2, BLUE, canvas);
                 draw_label(rsigma.right(ci).down(2), "+", canvas);
                 if j_begin < j_end {
-                    draw_highlight_box(
-                        plast.down(j_begin),
-                        1,
-                        j_end - j_begin,
-                        Color::BLUE,
-                        canvas,
-                    );
+                    draw_highlight_box(plast.down(j_begin), 1, j_end - j_begin, BLUE, canvas);
                 }
 
-                draw_highlight(pocc.right(ci).down(j_begin), Color::BLUE, canvas);
-                draw_highlight(pocc.right(ci).down(j_end), Color::BLUE, canvas);
+                draw_highlight(pocc.right(ci).down(j_begin), BLUE, canvas);
+                draw_highlight(pocc.right(ci).down(j_end), BLUE, canvas);
             }
 
             // NOTE: We save each query step twice since this is a tricky part and
@@ -472,28 +461,7 @@ impl<'a> BWT<'a> {
             if step < ql {
                 draw_text(pbotlabel, "Update s[i-1] = C[c] + Occ[c][s[i]]", canvas);
             }
-            save(canvas);
-            present(canvas);
-            return;
+            return true;
         }
     }
-}
-
-fn main() {
-    let mut s = ARGS
-        .input
-        .clone()
-        .unwrap_or("GTCCCGATGTCATGTCAGGA".to_owned());
-    s.push('$');
-    let s = s.as_bytes();
-
-    let q = ARGS.query.clone().unwrap_or("GTCC".to_string());
-    let q = q.as_bytes();
-
-    let ref mut canvas = canvas(s.len() + 7 + s_stats(s).0, s.len() + 8);
-    let bwt = BWT::new(s, q);
-    for state in bwt.states() {
-        bwt.draw(state, canvas);
-    }
-    wait_for_end();
 }

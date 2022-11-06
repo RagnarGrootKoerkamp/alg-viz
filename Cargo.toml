@@ -11,8 +11,27 @@ readme = "README.org"
 categories = ["science"]
 default-run = "suffix-array-construction"
 
+[lib]
+crate-type = ["cdylib", "lib"]
+
 [dependencies]
-clap = {version="3.*", features=["derive", "wrap_help"]}
-sdl2 = {version="*", features=["ttf"]}
-lazy_static = "*"
 itertools = "*"
+
+clap = {version="3.*", optional=true, features=["derive", "wrap_help"]}
+sdl2 = {version="*", optional=true, features=["ttf"]}
+lazy_static = {version="*", optional=true}
+
+wasm-bindgen = {version="*", optional=true}
+web-sys = { version = "*", optional=true, features = [
+"ImageData",
+"CanvasRenderingContext2d",
+"HtmlCanvasElement",
+"console",
+"BinaryType", "Blob", "ErrorEvent", "MessageEvent", "ProgressEvent", "WebSocket",
+"Document", "Element", "HtmlElement", "Node", "Window", "HtmlInputElement",
+]}
+
+[features]
+default = ["bin"]
+bin = ["dep:clap", "dep:sdl2", "dep:lazy_static"]
+wasm = ["dep:wasm-bindgen", "dep:web-sys"]

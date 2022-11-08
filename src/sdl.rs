@@ -3,6 +3,7 @@ use std::{sync::atomic::AtomicUsize, time::Duration};
 use crate::{
     canvas::{Canvas, Color, HAlign, VAlign, BLACK},
     cli::ARGS,
+    interaction::KeyboardAction,
 };
 
 use sdl2::{
@@ -113,18 +114,6 @@ impl Canvas for SdlCanvas {
             FRAME.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
         }
     }
-}
-
-#[derive(PartialEq, Eq)]
-pub enum KeyboardAction {
-    Next,
-    Prev,
-    PausePlay,
-    Faster,
-    Slower,
-    ToEnd,
-    Exit,
-    None,
 }
 
 pub fn wait_for_key(timeout: Duration) -> KeyboardAction {

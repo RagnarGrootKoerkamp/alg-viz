@@ -1,19 +1,20 @@
-#![feature(let_else)]
+#![feature(let_else, duration_constants)]
 
 pub mod bibwt;
 pub mod bwt;
 pub mod canvas;
 pub mod grid;
+pub mod interaction;
 pub mod suffix_array;
 
 // Deps for command line tool
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(feature = "bin")]
 pub mod cli;
-#[cfg(not(feature = "wasm"))]
+#[cfg(feature = "bin")]
 pub mod sdl;
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(feature = "bin")]
 #[macro_use]
 extern crate lazy_static;
 

@@ -1,19 +1,23 @@
+use crate::bibwt::BiBWT;
+use crate::bwt::BWT;
 use crate::canvas::Canvas;
+use crate::canvas::CanvasBox;
 use crate::canvas::Color;
 use crate::canvas::BLACK;
-use crate::suffix_array::draw_sa;
-use crate::suffix_array::states;
-use crate::suffix_array::State;
+use crate::interaction::Interaction;
+use crate::suffix_array::SA;
+use crate::viz::Viz;
+use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::HtmlCanvasElement;
 use web_sys::HtmlInputElement;
+use web_sys::HtmlSelectElement;
 
 struct HtmlCanvas {
     context: CanvasRenderingContext2d,
-    element: HtmlCanvasElement,
 }
 
 fn jscol((r, g, b): Color) -> JsValue {
@@ -22,6 +26,7 @@ fn jscol((r, g, b): Color) -> JsValue {
 fn jsstr(s: &str) -> JsValue {
     JsValue::from_str(s)
 }
+#[allow(unused)]
 fn log(s: &str) {
     web_sys::console::log_1(&jsstr(s));
 }
@@ -40,7 +45,7 @@ fn get<T: wasm_bindgen::JsCast>(id: &str) -> T {
 }
 
 impl Canvas for HtmlCanvas {
-    fn fill_background(&mut self, color: crate::canvas::Color) {
+    fn fill_background(&mut self, _color: crate::canvas::Color) {
         //self.context.set_fill_style(&jscol(color));
         self.context.clear_rect(
             0.,
@@ -68,7 +73,7 @@ impl Canvas for HtmlCanvas {
         x: i32,
         y: i32,
         ha: crate::canvas::HAlign,
-        va: crate::canvas::VAlign,
+        _va: crate::canvas::VAlign,
         text: &str,
     ) {
         self.context.set_fill_style(&jscol(BLACK));
@@ -83,85 +88,70 @@ impl Canvas for HtmlCanvas {
     }
 
     // no-op
-    fn present(&mut self) {}
-
-    // no-op
     fn save(&mut self) {}
 }
 
-static mut STRING: String = String::new();
-static mut STATE: usize = 0;
-static mut FORWARD: bool = true;
-static mut STATES: Vec<State> = vec![];
-
-#[wasm_bindgen]
-pub fn update_string() {
-    unsafe {
-        STRING = get::<HtmlInputElement>("string").value();
-        STATE = 0;
-        FORWARD = true;
-    };
+thread_local! {
+    static ALG: RefCell<Box<dyn Viz>> = RefCell::new(Box::new(SA::new("GTCCCGATGTCATGTCAGGA$".as_bytes().to_vec())));
 }
+static mut INTERACTION: Interaction = Interaction::default();
 
 #[wasm_bindgen]
-pub fn prev() {
-    unsafe {
-        if STATE > 0 {
-            STATE -= 1;
-        }
-        FORWARD = false;
+pub fn reset() {
+    let alg_name = get::<HtmlSelectElement>("algorithm").value();
+    let mut string = get::<HtmlInputElement>("string").value().into_bytes();
+    if string.is_empty() {
+        string = "GTCCCGATGTCATGTCAGGA$".as_bytes().to_vec()
     };
-}
-
-#[wasm_bindgen]
-pub fn next() {
+    let mut query = get::<HtmlInputElement>("query").value().into_bytes();
+    if query.is_empty() {
+        query = "GTCC".as_bytes().to_vec()
+    };
+    let new_alg = match alg_name.as_str() {
+        "suffix-array" => Box::new(SA::new(string)) as Box<dyn Viz>,
+        "bwt" => Box::new(BWT::new(string, query)) as Box<dyn Viz>,
+        "bibwt" => Box::new(BiBWT::new(string, query)) as Box<dyn Viz>,
+        _ => panic!(),
+    };
     unsafe {
-        if STATE + 1 < STATES.len() {
-            STATE += 1;
-        }
-        FORWARD = true;
+        INTERACTION.reset(new_alg.num_states());
     }
+    ALG.set(new_alg);
+    draw();
 }
 
 #[wasm_bindgen]
 pub fn draw() {
-    let element = get::<HtmlCanvasElement>("drawing");
-    let mut s = unsafe { STRING.as_bytes() };
-    if s.is_empty() {
-        s = "GTCCCGATGTCATGTCAGGA$".as_bytes();
-    }
-    log(&format!("STRING: {s:?}"));
-    let n = s.len();
-
-    unsafe {
-        STATES = states(n);
-    }
-
+    let element = get::<HtmlCanvasElement>("canvas");
     let context = element
         .get_context("2d")
         .unwrap()
         .unwrap()
         .dyn_into::<CanvasRenderingContext2d>()
         .unwrap();
-    let mut canvas = HtmlCanvas { element, context };
-    //let (w, h) = canvas_size(n + 4, n + 4);
-    loop {
-        let state_id = unsafe { STATE };
-        let state = unsafe { STATES.get(state_id) };
-        let Some(state) = state else {
-            break;
-        };
-        log(&format!("state {state_id}: {state:?}"));
-        if draw_sa(s, *state, &mut canvas) {
-            break;
-        }
-        unsafe {
-            if FORWARD {
-                next();
-            } else {
-                prev();
+    let ref mut canvas = Box::new(HtmlCanvas { context }) as CanvasBox;
+    unsafe {
+        loop {
+            if ALG.with(|alg| alg.borrow_mut().draw(INTERACTION.get(), canvas)) {
+                break;
             }
-        };
+            INTERACTION.step();
+        }
     }
-    canvas.context.fill();
+}
+
+#[wasm_bindgen]
+pub fn prev() {
+    unsafe {
+        INTERACTION.prev();
+        draw();
+    };
+}
+
+#[wasm_bindgen]
+pub fn next() {
+    unsafe {
+        INTERACTION.next();
+        draw();
+    }
 }

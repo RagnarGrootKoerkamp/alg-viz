@@ -29,6 +29,7 @@ web-sys = { version = "*", optional=true, features = [
 "console",
 "BinaryType", "Blob", "ErrorEvent", "MessageEvent", "ProgressEvent", "WebSocket",
 "Document", "Element", "HtmlElement", "Node", "Window", "HtmlInputElement",
+"HtmlSelectElement",
 ]}
 
 [features]

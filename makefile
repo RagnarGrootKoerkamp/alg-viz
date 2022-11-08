@@ -1,6 +1,6 @@
 all: img/suffix-array.gif img/bwt.gif
 
-img/suffix-array/0.bmp: target/debug/suffix-array-construction
+img/suffix-array/0.bmp: target/debug/alg-viz
 	cargo run -- --save img/suffix-array
 
 img/suffix-array.gif: img/suffix-array/0.bmp

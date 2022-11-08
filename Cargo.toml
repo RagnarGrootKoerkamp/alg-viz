@@ -1,15 +1,15 @@
 [package]
-name = "suffix-array-construction"
+name = "alg-viz"
 authors = ["Ragnar Groot Koerkamp"]
-description = "A visualization of the Ko-Aluru suffix array extension algorithm."
+description = "Visualizations of some string algorithms."
 version = "0.1.0"
 edition = "2021"
-repository = "https://github.com/RagnarGrootKoerkamp/suffix-array-construction"
+repository = "https://github.com/RagnarGrootKoerkamp/alg-viz"
 license = "MPL-2.0"
-keywords = ["suffix-array"]
+keywords = ["string", "algorithm", "visualization"]
 readme = "README.org"
 categories = ["science"]
-default-run = "suffix-array-construction"
+default-run = "alg-viz"
 
 [lib]
 crate-type = ["cdylib", "lib"]

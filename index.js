@@ -1,4 +1,4 @@
-import init from "./pkg/suffix_array_construction.js";
+import init from "./pkg/alg_viz.js";
 // TODO: fix the import using
 // https://stackoverflow.com/questions/61986932/how-to-pass-a-string-from-js-to-wasm-generated-through-rust-using-wasm-bindgen-w
 init()

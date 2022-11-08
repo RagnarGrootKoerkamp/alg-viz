@@ -27,4 +27,7 @@ pub trait Canvas {
     fn write_text(&mut self, x: i32, y: i32, ha: HAlign, va: VAlign, text: &str);
 
     fn save(&mut self);
+    fn present(&mut self) {}
 }
+
+pub type CanvasBox = Box<dyn Canvas>;

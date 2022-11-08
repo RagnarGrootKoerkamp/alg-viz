@@ -1,4 +1,4 @@
-use crate::{canvas::*, grid::*};
+use crate::{canvas::*, grid::*, viz::Viz};
 use itertools::Itertools;
 
 #[derive(Ord, PartialEq, PartialOrd, Eq, Clone, Copy)]
@@ -42,9 +42,9 @@ fn to_c(condition: bool) -> Color {
     }
 }
 
-pub struct BWT<'a> {
-    s: &'a [u8],
-    q: &'a [u8],
+pub struct BWT {
+    s: Vec<u8>,
+    q: Vec<u8>,
     n: usize,
     ql: usize,
     s2: Vec<u8>,
@@ -54,10 +54,12 @@ pub struct BWT<'a> {
     sa: Vec<usize>,
     occ: Vec<Vec<i32>>,
     j_begin_end: Vec<(usize, usize)>,
+
+    pub states: Vec<State>,
 }
 
-impl<'a> BWT<'a> {
-    pub fn new(s: &'a [u8], q: &'a [u8]) -> Self {
+impl BWT {
+    pub fn new(s: Vec<u8>, q: Vec<u8>) -> Self {
         let n = s.len();
         let alph = {
             let mut alph = s.to_vec();
@@ -67,7 +69,7 @@ impl<'a> BWT<'a> {
         };
 
         let mut s2 = s.to_vec();
-        s2.extend(s);
+        s2.extend(&s);
         let sa = {
             let mut sa = (0..n).collect_vec();
             sa.sort_by_key(|i| &s[*i..]);
@@ -109,6 +111,32 @@ impl<'a> BWT<'a> {
                 (j_begin, j_end)
             })
             .collect_vec();
+
+        use State::*;
+        let mut states = vec![Init, Rotations, SortedRotations, FirstLast];
+
+        let (num_chars, max_char_cnt) = s_stats(&s);
+
+        for i in 0..max_char_cnt {
+            states.push(LfMap(i));
+        }
+        for i in 0..num_chars {
+            states.push(Counts(i));
+        }
+        states.push(CountsDone);
+        for i in 0..num_chars {
+            states.push(Occ(i));
+        }
+        states.push(OccDone);
+        for i in 0..=ql {
+            states.push(Query(i));
+        }
+        // Show the last frame for a bit longer in the gif.
+        states.push(State::Query(ql));
+        states.push(State::Query(ql));
+        states.push(State::Query(ql));
+        states.push(State::Query(ql));
+
         BWT {
             s,
             q,
@@ -121,47 +149,26 @@ impl<'a> BWT<'a> {
             sa,
             occ,
             j_begin_end,
+            states,
         }
     }
+}
 
-    pub fn states(&self) -> Vec<State> {
-        use State::*;
-        let mut v = vec![Init, Rotations, SortedRotations, FirstLast];
-
-        let (num_chars, max_char_cnt) = s_stats(self.s);
-
-        for i in 0..max_char_cnt {
-            v.push(LfMap(i));
-        }
-        for i in 0..num_chars {
-            v.push(Counts(i));
-        }
-        v.push(CountsDone);
-        for i in 0..num_chars {
-            v.push(Occ(i));
-        }
-        v.push(OccDone);
-        let ql = self.ql;
-        for i in 0..=ql {
-            v.push(Query(i));
-        }
-        // Show the last frame for a bit longer in the gif.
-        v.push(State::Query(ql));
-        v.push(State::Query(ql));
-        v.push(State::Query(ql));
-        v.push(State::Query(ql));
-        v
-    }
-
-    pub fn canvas_size(&self) -> (usize, usize) {
+impl Viz for BWT {
+    fn canvas_size(&self) -> (usize, usize) {
         let n = self.s.len();
-        (n + 7 + s_stats(self.s).0, n + 8)
+        (n + 7 + s_stats(&self.s).0, n + 8)
     }
 
-    pub fn draw(&self, state: State, canvas: &mut impl Canvas) -> bool {
+    fn num_states(&self) -> usize {
+        self.states.len()
+    }
+
+    fn draw(&self, state: usize, canvas: &mut CanvasBox) -> bool {
+        let state = self.states[state];
         draw_background(canvas);
 
-        let s = self.s;
+        let s = &self.s;
         let n = self.n;
         let ql = self.ql;
 
@@ -205,7 +212,7 @@ impl<'a> BWT<'a> {
         // Static data
 
         // 1. Draw input
-        draw_string_with_labels(ps, s, |i| to_c(s[i] == '$' as u8), canvas);
+        draw_string_with_labels(ps, &s, |i| to_c(s[i] == '$' as u8), canvas);
 
         if state == State::Init {
             draw_text(plabel, "Input string S.", canvas);
@@ -378,7 +385,7 @@ impl<'a> BWT<'a> {
 
         // Draw query
         {
-            let q = self.q;
+            let q = &self.q;
             let step = match state {
                 State::Query(step) => step,
                 _ => unreachable!(),

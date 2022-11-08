@@ -30,6 +30,10 @@ impl Interaction {
             playing: true,
         }
     }
+    pub fn reset(&mut self, len: usize) {
+        *self = Self::new(len);
+    }
+
     pub fn prev(&mut self) -> bool {
         self.forward = false;
         let r = self.idx > 0;
@@ -55,8 +59,8 @@ impl Interaction {
     pub fn toend(&mut self) {
         self.idx = self.len - 1;
     }
-    pub fn get<State: Clone>(&self, states: &Vec<State>) -> State {
-        states[self.idx].clone()
+    pub fn get(&self) -> usize {
+        self.idx
     }
     pub fn faster(&mut self) {
         self.spf = self.spf.div_f32(1.5);

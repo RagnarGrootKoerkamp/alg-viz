@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub};
 
-use crate::canvas::{Canvas, Color, HAlign, VAlign, BLACK};
+use crate::canvas::{Canvas, CanvasBox, Color, HAlign, VAlign, BLACK};
 
 pub fn to_label(c: u8) -> String {
     String::from_utf8(vec![c]).unwrap()
@@ -53,15 +53,15 @@ pub fn canvas_size(w: usize, h: usize) -> (u32, u32) {
     (w as u32 * CS, h as u32 * CS)
 }
 
-pub fn draw_background(canvas: &mut impl Canvas) {
+pub fn draw_background(canvas: &mut CanvasBox) {
     canvas.fill_background(BACKGROUND);
 }
 
-fn write_label(x: i32, y: i32, ha: HAlign, va: VAlign, text: &str, canvas: &mut impl Canvas) {
+fn write_label(x: i32, y: i32, ha: HAlign, va: VAlign, text: &str, canvas: &mut CanvasBox) {
     canvas.write_text(x, y, ha, va, text);
 }
 
-pub fn draw_label(Pos(x, y): Pos, label: &str, canvas: &mut impl Canvas) {
+pub fn draw_label(Pos(x, y): Pos, label: &str, canvas: &mut CanvasBox) {
     canvas.write_text(
         x as i32 * CS as i32 + CS as i32 / 2,
         y as i32 * CS as i32 + CS as i32 / 2,
@@ -71,7 +71,7 @@ pub fn draw_label(Pos(x, y): Pos, label: &str, canvas: &mut impl Canvas) {
     );
 }
 
-pub fn draw_text(Pos(x, y): Pos, label: &str, canvas: &mut impl Canvas) {
+pub fn draw_text(Pos(x, y): Pos, label: &str, canvas: &mut CanvasBox) {
     let x = x as i32 * CS as i32;
     let y = y as i32 * CS as i32;
     write_label(
@@ -84,7 +84,7 @@ pub fn draw_text(Pos(x, y): Pos, label: &str, canvas: &mut impl Canvas) {
     );
 }
 
-pub fn draw_char_box(Pos(x, y): Pos, c: u8, color: Color, canvas: &mut impl Canvas) {
+pub fn draw_char_box(Pos(x, y): Pos, c: u8, color: Color, canvas: &mut CanvasBox) {
     let x = x as i32 * CS as i32;
     let y = y as i32 * CS as i32;
     canvas.fill_rect(x, y, CS, CS, color);
@@ -104,7 +104,7 @@ pub fn draw_highlight_box(
     w: usize,
     h: usize,
     color: Color,
-    canvas: &mut impl Canvas,
+    canvas: &mut CanvasBox,
 ) {
     let x = x as i32 * CS as i32;
     let y = y as i32 * CS as i32;
@@ -142,7 +142,7 @@ pub fn draw_highlight_box(
 }
 
 // Draw a box around a cell.
-pub fn draw_highlight(p: Pos, color: Color, canvas: &mut impl Canvas) {
+pub fn draw_highlight(p: Pos, color: Color, canvas: &mut CanvasBox) {
     draw_highlight_box(p, 1, 1, color, canvas);
 }
 
@@ -150,7 +150,7 @@ pub fn draw_string(
     Pos(x, y): Pos,
     s: &[u8],
     color: impl Fn(usize) -> Color,
-    canvas: &mut impl Canvas,
+    canvas: &mut CanvasBox,
 ) {
     for (i, &c) in s.iter().enumerate() {
         draw_char_box(Pos(x + i, y), c, color(i), canvas);
@@ -161,7 +161,7 @@ pub fn draw_string_with_labels(
     Pos(x, y): Pos,
     s: &[u8],
     color: impl Fn(usize) -> Color,
-    canvas: &mut impl Canvas,
+    canvas: &mut CanvasBox,
 ) {
     draw_label(Pos(x - 1, y - 1), "i", canvas);
     for i in 0..s.len() {

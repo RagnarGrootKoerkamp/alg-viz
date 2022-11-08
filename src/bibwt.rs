@@ -1,4 +1,4 @@
-use crate::{canvas::*, grid::*};
+use crate::{canvas::*, grid::*, viz::Viz};
 use itertools::Itertools;
 use std::{cmp::max, ops::Range};
 
@@ -61,9 +61,9 @@ fn to_c(condition: bool) -> Color {
     }
 }
 
-pub struct BiBWT<'a> {
-    s: &'a [u8],
-    q: &'a [u8],
+pub struct BiBWT {
+    s: Vec<u8>,
+    q: Vec<u8>,
     s2: Vec<u8>,
     alph: Vec<u8>,
     char_count: Vec<usize>,
@@ -72,14 +72,16 @@ pub struct BiBWT<'a> {
     occ: Vec<Vec<usize>>,
     sa_r: Vec<usize>,
     occ_r: Vec<Vec<usize>>,
+
+    pub states: Vec<State>,
 }
 
 fn rev(s: &[u8]) -> Vec<u8> {
     s.iter().rev().copied().collect()
 }
 
-impl<'a> BiBWT<'a> {
-    pub fn new(s: &'a [u8], q: &'a [u8]) -> Self {
+impl BiBWT {
+    pub fn new(s: Vec<u8>, q: Vec<u8>) -> Self {
         let n = s.len();
         let alph = {
             let mut alph = s.to_vec();
@@ -89,8 +91,8 @@ impl<'a> BiBWT<'a> {
         };
 
         let mut s2 = s.to_vec();
-        s2.extend(s);
-        s2.extend(s);
+        s2.extend(&s);
+        s2.extend(&s);
         let sa = {
             let mut sa = (0..n).collect_vec();
             sa.sort_by_key(|i| &s[*i..]);
@@ -136,23 +138,7 @@ impl<'a> BiBWT<'a> {
             })
             .collect_vec();
 
-        BiBWT {
-            s,
-            q,
-            s2,
-            alph,
-            char_count,
-            char_start,
-            sa,
-            occ,
-            sa_r,
-            occ_r,
-            //j_begin_end,
-        }
-    }
-
-    pub fn states(&self) -> Vec<State> {
-        let mut v = vec![
+        let mut states = vec![
             Init,
             LeftSA(0),
             LeftSA(1),
@@ -165,12 +151,12 @@ impl<'a> BiBWT<'a> {
             LeftOcc,
             RightOcc,
         ];
-        for i in 0..s_stats(self.s).0 {
-            v.push(Equivalence(i));
+        for i in 0..s_stats(&s).0 {
+            states.push(Equivalence(i));
         }
 
-        v.push(Pause);
-        let ql = self.q.len();
+        states.push(Pause);
+        let ql = q.len();
         for i in 1..ql {
             for qs in [
                 PreviousDone,
@@ -187,15 +173,28 @@ impl<'a> BiBWT<'a> {
                 ExtendStartSecond,
                 ExtendEndSecond,
             ] {
-                v.push(Query(i, qs));
+                states.push(Query(i, qs));
             }
         }
         // Show the last frame for a bit longer in the gif.
-        v.push(Query(ql, PreviousDone));
-        v.push(Query(ql, PreviousDone));
-        v.push(Query(ql, PreviousDone));
-        v.push(Query(ql, PreviousDone));
-        v
+        states.push(Query(ql, PreviousDone));
+        states.push(Query(ql, PreviousDone));
+        states.push(Query(ql, PreviousDone));
+        states.push(Query(ql, PreviousDone));
+
+        BiBWT {
+            s,
+            q,
+            s2,
+            alph,
+            char_count,
+            char_start,
+            sa,
+            occ,
+            sa_r,
+            occ_r,
+            states,
+        }
     }
 
     fn query_ranges(&self, q: &[u8]) -> (Range<usize>, Range<usize>) {
@@ -218,16 +217,23 @@ impl<'a> BiBWT<'a> {
             .1;
         ((j_begin..j_end), (j_begin_r..j_end_r))
     }
+}
 
-    pub fn canvas_size(&self) -> (usize, usize) {
+impl Viz for BiBWT {
+    fn canvas_size(&self) -> (usize, usize) {
         let n = self.s.len();
-        (n + 12 + 2 * s_stats(self.s).0, n + 9)
+        (n + 12 + 2 * s_stats(&self.s).0, n + 9)
     }
 
-    pub fn draw(&self, state: State, canvas: &mut impl Canvas) -> bool {
+    fn num_states(&self) -> usize {
+        self.states.len()
+    }
+
+    fn draw(&self, state: usize, canvas: &mut CanvasBox) -> bool {
+        let state = self.states[state];
         draw_background(canvas);
 
-        let s = self.s;
+        let s = &self.s;
         let n = s.len();
 
         // Positioning
@@ -284,7 +290,7 @@ impl<'a> BiBWT<'a> {
         // Static data
 
         // 1. Draw input
-        draw_string_with_labels(ps, s, |i| to_c(s[i] == '$' as u8), canvas);
+        draw_string_with_labels(ps, &s, |i| to_c(s[i] == '$' as u8), canvas);
 
         if state == Init {
             draw_text(plabel, "Input string S.", canvas);
@@ -496,7 +502,7 @@ impl<'a> BiBWT<'a> {
 
         if let Query(step, qs) = state {
             // Current state
-            let q = self.q;
+            let q = &self.q;
             let ql = q.len();
             let mid = (ql + 1) / 2;
 
@@ -511,8 +517,8 @@ impl<'a> BiBWT<'a> {
             if pq.0 >= done.start + 1 {
                 draw_label(pq.left(max(2, done.start + 1)), "Q", canvas);
             }
-            draw_string(pq.left(done.start), q, |_| DEFAULT, canvas);
-            draw_string(pq_r.left(done.end), q, |_| DEFAULT, canvas);
+            draw_string(pq.left(done.start), &q, |_| DEFAULT, canvas);
+            draw_string(pq_r.left(done.end), &q, |_| DEFAULT, canvas);
 
             // Draw current range
             draw_label(pqs.left(2), "s", canvas);

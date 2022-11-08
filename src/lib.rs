@@ -6,6 +6,7 @@ pub mod canvas;
 pub mod grid;
 pub mod interaction;
 pub mod suffix_array;
+pub mod viz;
 
 // Deps for command line tool
 

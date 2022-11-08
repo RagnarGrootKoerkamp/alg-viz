@@ -53,6 +53,16 @@ impl Canvas for SdlCanvas {
         .unwrap();
     }
 
+    fn fill_rect(&mut self, x: i32, y: i32, w: u32, h: u32, color: Color) {
+        self.set_draw_color(color);
+        self.fill_rect(Rect::new(x, y, w, h)).unwrap();
+    }
+
+    fn draw_rect(&mut self, x: i32, y: i32, w: u32, h: u32, color: Color) {
+        self.set_draw_color(color);
+        self.draw_rect(Rect::new(x, y, w, h)).unwrap();
+    }
+
     fn write_text(&mut self, x: i32, y: i32, ha: HAlign, va: VAlign, text: &str) {
         self.set_draw_color(BLACK);
         let surface = FONT.with(|front| front.render(text).blended(self.draw_color()).unwrap());
@@ -76,16 +86,6 @@ impl Canvas for SdlCanvas {
             Some(Rect::new(x, y, w, h)),
         )
         .unwrap();
-    }
-
-    fn fill_rect(&mut self, x: i32, y: i32, w: u32, h: u32, color: Color) {
-        self.set_draw_color(color);
-        self.fill_rect(Rect::new(x, y, w, h)).unwrap();
-    }
-
-    fn draw_rect(&mut self, x: i32, y: i32, w: u32, h: u32, color: Color) {
-        self.set_draw_color(color);
-        self.draw_rect(Rect::new(x, y, w, h)).unwrap();
     }
 
     fn save(&mut self) {
@@ -113,6 +113,10 @@ impl Canvas for SdlCanvas {
             surf.save_bmp(path).unwrap();
             FRAME.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
         }
+    }
+
+    fn present(&mut self) {
+        self.present()
     }
 }
 

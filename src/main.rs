@@ -3,11 +3,13 @@
 
 use suffix_array_construction::{
     bibwt, bwt,
+    canvas::CanvasBox,
     cli::{Algorithm, ARGS},
     grid::canvas_size,
     interaction::Interaction,
     sdl::new_canvas,
     suffix_array as sa,
+    viz::Viz,
 };
 
 fn main() -> ! {
@@ -16,63 +18,29 @@ fn main() -> ! {
         .clone()
         .unwrap_or("GTCCCGATGTCATGTCAGGA".to_owned());
     s.push('$');
-    let s = s.as_bytes();
-    let n = s.len();
+    let s = s.into_bytes();
+    let q = ARGS
+        .query
+        .clone()
+        .unwrap_or("GTCC".to_string())
+        .into_bytes();
 
-    match ARGS.algorithm {
-        Algorithm::SuffixArray => {
-            let (w, h) = sa::canvas_size(s);
-            let (w, h) = canvas_size(w, h);
-            let ref mut canvas = new_canvas(w, h);
-            let states = sa::states(n);
-            let mut interaction = Interaction::new(states.len());
-            loop {
-                if sa::draw(s, interaction.get(&states), canvas) {
-                    canvas.present();
-                    interaction.wait();
-                } else {
-                    interaction.step();
-                }
-            }
-        }
-        Algorithm::BWT => {
-            let q = ARGS.query.clone().unwrap_or("GTCC".to_string());
-            let q = q.as_bytes();
+    let alg = match ARGS.algorithm {
+        Algorithm::SuffixArray => Box::new(sa::SA::new(s)) as Box<dyn Viz>,
+        Algorithm::BWT => Box::new(bwt::BWT::new(s, q)) as Box<dyn Viz>,
+        Algorithm::BiBWT => Box::new(bibwt::BiBWT::new(s, q)) as Box<dyn Viz>,
+    };
 
-            let bwt = bwt::BWT::new(s, q);
-            let (w, h) = bwt.canvas_size();
-            let (w, h) = canvas_size(w, h);
-            let ref mut canvas = new_canvas(w, h);
-            let states = bwt.states();
-            let mut interaction = Interaction::new(states.len());
-            loop {
-                if bwt.draw(interaction.get(&states), canvas) {
-                    canvas.present();
-                    interaction.wait();
-                } else {
-                    interaction.step();
-                }
-            }
-        }
-
-        Algorithm::BiBWT => {
-            let q = ARGS.query.clone().unwrap_or("GTCC".to_string());
-            let q = q.as_bytes();
-
-            let bibwt = bibwt::BiBWT::new(s, q);
-            let (w, h) = bibwt.canvas_size();
-            let (w, h) = canvas_size(w, h);
-            let ref mut canvas = new_canvas(w, h);
-            let states = bibwt.states();
-            let mut interaction = Interaction::new(states.len());
-            loop {
-                if bibwt.draw(interaction.get(&states), canvas) {
-                    canvas.present();
-                    interaction.wait();
-                } else {
-                    interaction.step();
-                }
-            }
+    let (w, h) = alg.canvas_size();
+    let (w, h) = canvas_size(w, h);
+    let mut canvas = Box::new(new_canvas(w, h)) as CanvasBox;
+    let mut interaction = Interaction::new(alg.num_states());
+    loop {
+        if alg.draw(interaction.get(), &mut canvas) {
+            canvas.present();
+            interaction.wait();
+        } else {
+            interaction.step();
         }
     }
 }

@@ -1,37 +1,43 @@
-#+title: Suffix Array & BWT visualizations
+#+title: String algorithm visualizations
 
 This is a small app to visualize some string algorithms.
 
-* Ko-Aluru linear time suffix array construction
+* Usage
+- As an *interactive webapp*, see [[https://curiouscoding.nl/posts/alg-viz/][this blog post]] ::
+  This is done by compiling the rust code to webassembly with a small
+  javascript wrapper for event handling.
+- As a Rust application ::
+  1. Install Rust: [[https://rustup.rs/]]
+  2. Clone the repository and install the ~SDL2~ and ~SDL2_TTF~ dependencies if needed.
+  3. Run the code with the default =bin= feature as:
+    #+begin_src fish
+cargo run -- <suffix-array|bwt|bi-bwt> [string] [--query <query>] [--save dir]
+    #+end_src
+     arguments in =[]= are optional.
+     - The ~--save~ option can be used to save each frame as a =.bmp=.
 
-First, it visualises the extension step of the Ko-Aluru
+** Keyboard controls
+Both the webapp and binary support the following keyboard commands:
+- =→= / =SPACE=: next frame
+- =←= / =BACKSPACE=: previous frame
+- =p= / =RETURN=: play/pause
+- =↑= / =+= / =f=: faster
+- =↓= / =-= / =s=: slower
+
+* Algorithms
+** Ko-Aluru linear time suffix array construction (=suffix-array=)
+
+First, it visualizes the extension step of the Ko-Aluru
 linear-time suffix array construction algorithm:
 Assuming the /small/ suffixes are already sorted and put and the end of their
 first-character buckets, this shows how the remaining /large/ suffixes are put
 into their places.
 
-See my corresponding [[https://research.curiouscoding.nl/notes/suffix-array-construction/][blogpost]] for more context.
-
-*Usage*:
-
-After installing Rust (see [[https://rustup.rs/]]), ~SDL2~, and ~SDL2_TTF~, clone
-the repository and run
-#+begin_src
-cargo run -- [--save dir] [string]
-#+end_src
-e.g.
-#+begin_src
-cargo run BANANAS-APPLES
-#+end_src
-
-*Keyboard controls*:
-- =SPACE=, =ESC=: go to next frame
-- =Q=: go to last frame, or exit from last frame
-- =X=: abort
+See [[https://research.curiouscoding.nl/notes/suffix-array-construction/][this blogpost]] for more context.
 
 [[file:./img/suffix-array.gif]]
 
-* Burrows–Wheeler transform & FM Index
+** Burrows–Wheeler transform & FM Index (=bwt=)
 
 The second visualization is of the BWT and FM index.
 - First the rotations are listed and sorted.
@@ -39,38 +45,16 @@ The second visualization is of the BWT and FM index.
 - Then character counts and the occurrences array are computed.
 - Lastly, it's shown how to compute the range starting with a given query.
 
-*Usage*:
-
-#+begin_src
-cargo run --bin bwt -- [--save dir] [string] [--query <query>]
-#+end_src
-e.g.
-#+begin_src
-cargo run --bin bwt -- BANANAS-APPLES --query ANA
-#+end_src
-
 [[file:./img/bwt.gif]]
 
-* Bidirectional Burrows-Wheeler transform
+** Bidirectional Burrows-Wheeler transform (=bi-bwt=)
 
 Lastly, you can visualize the bidirectional burrows wheeler transform.
 
 This starts in the middle of a query and then first extends to the left, and
 then extends to the right.
 
-*Usage*:
-
-#+begin_src
-cargo run --bin bibwt -- [--save dir] [string] [--query <query>]
-#+end_src
-e.g.
-#+begin_src
-cargo run --bin bibwt -- BANANAS-APPLES --query ANA
-#+end_src
-
 [[file:./img/bwt.gif]]
-
-
 
 * Animations
 

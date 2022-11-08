@@ -21,7 +21,7 @@ img/bibwt.gif: img/bibwt/0.bmp
 
 
 wasm:
-	wasm-pack build --target web --no-default-features --features wasm
+	wasm-pack build --debug --target web --no-default-features --features wasm
 prod:
 	wasm-pack build --release --target web --no-default-features --features wasm
 

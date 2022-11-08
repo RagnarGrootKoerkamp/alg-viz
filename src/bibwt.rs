@@ -597,7 +597,9 @@ impl Viz for BiBWT {
             let extend_left = step < mid;
             let extend_idx = if extend_left { mid - step - 1 } else { step };
             let next = q[extend_idx];
-            let ci = self.alph.iter().position(|&cc| cc == next).unwrap();
+            let Some(ci) = self.alph.iter().position(|&cc| cc == next) else {
+                return true;
+            };
             let pnext = pq.left(done.start).right(extend_idx);
             let pnext_r = pq_r.left(done.end).right(extend_idx);
             let cnext = psa.left(done.start).right(extend_idx);

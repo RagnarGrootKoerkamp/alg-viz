@@ -1,7 +1,7 @@
 #![cfg(feature = "bin")]
 #![feature(duration_constants)]
 
-use suffix_array_construction::{
+use alg_viz::{
     bibwt, bwt,
     canvas::CanvasBox,
     cli::{Algorithm, ARGS},
@@ -31,7 +31,7 @@ fn main() -> ! {
     };
 
     let (w, h) = alg.canvas_size();
-    let ref mut canvas = Box::new(new_canvas(w, h)) as CanvasBox;
+    let ref mut canvas = Box::new(new_canvas(w as u32, h as u32)) as CanvasBox;
     let mut interaction = Interaction::new(alg.num_states());
     loop {
         if alg.draw(interaction.get(), canvas) {

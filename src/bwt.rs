@@ -439,7 +439,9 @@ impl Viz for BWT {
             if step < ql {
                 let c = q[ql - 1 - step];
                 draw_label(pqend.left(1).up(1), "c", canvas);
-                let ci = self.alph.iter().position(|&cc| cc == c).unwrap();
+                let Some(ci) = self.alph.iter().position(|&cc| cc == c) else {
+                    return true;
+                };
                 draw_highlight(pqend.left(1), BLUE, canvas);
                 draw_highlight_box(rsigma.right(ci), 1, 2, BLUE, canvas);
                 draw_label(rsigma.right(ci).down(2), "+", canvas);

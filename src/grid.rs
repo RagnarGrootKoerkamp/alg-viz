@@ -49,8 +49,8 @@ impl Pos {
 const CS: u32 = 30;
 const BACKGROUND: Color = (255, 255, 255);
 
-pub fn canvas_size(w: usize, h: usize) -> (u32, u32) {
-    (w as u32 * CS, h as u32 * CS)
+pub fn canvas_size(w: usize, h: usize) -> (usize, usize) {
+    (w * CS as usize, h * CS as usize)
 }
 
 pub fn draw_background(canvas: &mut CanvasBox) {

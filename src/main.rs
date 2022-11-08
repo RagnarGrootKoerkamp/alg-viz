@@ -5,7 +5,6 @@ use suffix_array_construction::{
     bibwt, bwt,
     canvas::CanvasBox,
     cli::{Algorithm, ARGS},
-    grid::canvas_size,
     interaction::Interaction,
     sdl::new_canvas,
     suffix_array as sa,
@@ -32,7 +31,6 @@ fn main() -> ! {
     };
 
     let (w, h) = alg.canvas_size();
-    let (w, h) = canvas_size(w, h);
     let ref mut canvas = Box::new(new_canvas(w, h)) as CanvasBox;
     let mut interaction = Interaction::new(alg.num_states());
     loop {

@@ -218,7 +218,9 @@ impl BiBWT {
 impl Viz for BiBWT {
     fn canvas_size(&self) -> (usize, usize) {
         let n = self.s.len();
-        (n + 12 + 2 * s_stats(&self.s).0, n + 9)
+        let w = n + 12 + 2 * s_stats(&self.s).0;
+        let h = n + 9;
+        return canvas_size(w, h);
     }
 
     fn num_states(&self) -> usize {

@@ -152,7 +152,7 @@ impl BWT {
 impl Viz for BWT {
     fn canvas_size(&self) -> (usize, usize) {
         let n = self.s.len();
-        (n + 7 + s_stats(&self.s).0, n + 8)
+        canvas_size(n + 7 + s_stats(&self.s).0, n + 8)
     }
 
     fn num_states(&self) -> usize {

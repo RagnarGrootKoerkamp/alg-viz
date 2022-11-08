@@ -117,6 +117,11 @@ pub fn reset() {
         INTERACTION.reset(new_alg.num_states());
     }
     ALG.set(new_alg);
+    let element = get::<HtmlCanvasElement>("canvas");
+    let (w, h) = ALG.with(|alg| alg.borrow().canvas_size());
+    element.set_height(h as u32);
+    element.set_width(w as u32);
+
     draw();
 }
 

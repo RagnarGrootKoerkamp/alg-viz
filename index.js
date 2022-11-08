@@ -73,27 +73,30 @@ init()
         case 8: // backspace
         case 37: // left
           wasm.prev();
-          return false;
+          break;
         case 32: // space
         case 39: // right
           wasm.next();
-          return false;
+          break;
         case 38: // up
         case 70: // f
         case 187: // +
           faster();
-          return false;
+          break;
         case 40: // down
         case 83: // s
         case 189: // -
           slower();
-          return false;
+          break;
         case 13: // return
         case 80: // p
           pauseplay();
-          return false;
+          break;
+        default:
+          return;
       }
-      return true;
+      e.stopPropagation();
+      e.preventDefault();
     });
   })
   .catch(console.error);

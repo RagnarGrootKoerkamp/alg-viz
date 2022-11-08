@@ -21,6 +21,16 @@ pub enum KeyboardAction {
 }
 
 impl Interaction {
+    pub const fn default() -> Self {
+        Self {
+            len: 0,
+            idx: 0,
+            forward: true,
+            spf: Duration::SECOND,
+            playing: false,
+        }
+    }
+
     pub fn new(len: usize) -> Self {
         Self {
             len,

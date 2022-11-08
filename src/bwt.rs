@@ -131,11 +131,6 @@ impl BWT {
         for i in 0..=ql {
             states.push(Query(i));
         }
-        // Show the last frame for a bit longer in the gif.
-        states.push(State::Query(ql));
-        states.push(State::Query(ql));
-        states.push(State::Query(ql));
-        states.push(State::Query(ql));
 
         BWT {
             s,
@@ -464,9 +459,11 @@ impl Viz for BWT {
                     "Initialize the query range as the full text",
                     canvas,
                 );
+                return true;
             }
             if step < ql {
                 draw_text(pbotlabel, "Update s[i-1] = C[c] + Occ[c][s[i]]", canvas);
+                return true;
             }
             return true;
         }

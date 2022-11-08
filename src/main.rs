@@ -33,10 +33,10 @@ fn main() -> ! {
 
     let (w, h) = alg.canvas_size();
     let (w, h) = canvas_size(w, h);
-    let mut canvas = Box::new(new_canvas(w, h)) as CanvasBox;
+    let ref mut canvas = Box::new(new_canvas(w, h)) as CanvasBox;
     let mut interaction = Interaction::new(alg.num_states());
     loop {
-        if alg.draw(interaction.get(), &mut canvas) {
+        if alg.draw(interaction.get(), canvas) {
             canvas.present();
             interaction.wait();
         } else {

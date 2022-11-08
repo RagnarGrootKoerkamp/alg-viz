@@ -176,10 +176,6 @@ impl BiBWT {
                 states.push(Query(i, qs));
             }
         }
-        // Show the last frame for a bit longer in the gif.
-        states.push(Query(ql, PreviousDone));
-        states.push(Query(ql, PreviousDone));
-        states.push(Query(ql, PreviousDone));
         states.push(Query(ql, PreviousDone));
 
         BiBWT {

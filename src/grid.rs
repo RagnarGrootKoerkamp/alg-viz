@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub};
 
-use crate::canvas::{Canvas, CanvasBox, Color, HAlign, VAlign, BLACK};
+use crate::canvas::{CanvasBox, Color, HAlign, VAlign, BLACK};
 
 pub fn to_label(c: u8) -> String {
     String::from_utf8(vec![c]).unwrap()

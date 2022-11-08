@@ -1,4 +1,4 @@
-#![feature(let_else, duration_constants)]
+#![feature(let_else, duration_constants, local_key_cell_methods)]
 
 pub mod bibwt;
 pub mod bwt;

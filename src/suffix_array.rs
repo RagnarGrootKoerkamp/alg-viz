@@ -43,7 +43,7 @@ impl SA {
 
 impl Viz for SA {
     fn canvas_size(&self) -> (usize, usize) {
-        (self.s.len() + 4, self.s.len() + 4)
+        canvas_size(self.s.len() + 4, self.s.len() + 4)
     }
 
     fn num_states(&self) -> usize {

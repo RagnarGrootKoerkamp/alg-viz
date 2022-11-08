@@ -68,7 +68,7 @@ init()
 
     wasm.reset();
 
-    document.onkeydown = function (e) {
+    canvas.addEventListener("keydown", function (e) {
       switch (e.keyCode) {
         case 8: // backspace
         case 37: // left
@@ -94,6 +94,6 @@ init()
           return false;
       }
       return true;
-    };
+    });
   })
   .catch(console.error);

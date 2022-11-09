@@ -1,4 +1,4 @@
-use crate::{canvas::*, grid::*, viz::Viz};
+use crate::{alg::Viz, canvas::*};
 use itertools::Itertools;
 use std::{cmp::max, ops::Range};
 

@@ -1,8 +1,4 @@
-use crate::{
-    canvas::{Canvas, BLUE, GREEN, RED, WHITE},
-    grid::*,
-    viz::Viz,
-};
+use crate::{alg::Viz, canvas::*};
 
 const SMALL_COLOUR: (u8, u8, u8) = GREEN;
 const LARGE_COLOUR: (u8, u8, u8) = (244, 113, 116);

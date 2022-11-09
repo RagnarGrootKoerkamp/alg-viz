@@ -1,3 +1,7 @@
+pub mod bibwt;
+pub mod bwt;
+pub mod suffix_array;
+
 use crate::canvas::Canvas;
 
 pub trait Viz {

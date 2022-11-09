@@ -1,4 +1,4 @@
-use crate::{canvas::*, grid::*, viz::Viz};
+use crate::{alg::Viz, canvas::*};
 use itertools::Itertools;
 
 #[derive(Ord, PartialEq, PartialOrd, Eq, Clone, Copy)]

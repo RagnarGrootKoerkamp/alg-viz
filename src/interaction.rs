@@ -84,7 +84,7 @@ impl Interaction {
 
     #[cfg(feature = "bin")]
     pub fn wait(&mut self) {
-        use crate::sdl::wait_for_key;
+        use crate::canvas::sdl::wait_for_key;
 
         match wait_for_key(if self.playing {
             self.spf

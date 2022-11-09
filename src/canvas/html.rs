@@ -1,12 +1,10 @@
-use crate::bibwt::BiBWT;
-use crate::bwt::BWT;
+use crate::alg::Viz;
+use crate::alg::{bibwt::BiBWT, bwt::BWT, suffix_array::SA};
 use crate::canvas::Canvas;
 use crate::canvas::CanvasBox;
 use crate::canvas::Color;
 use crate::canvas::BLACK;
 use crate::interaction::Interaction;
-use crate::suffix_array::SA;
-use crate::viz::Viz;
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;

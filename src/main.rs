@@ -2,13 +2,12 @@
 #![feature(duration_constants)]
 
 use alg_viz::{
-    bibwt, bwt,
+    alg::Viz,
+    alg::{bibwt, bwt, suffix_array as sa},
+    canvas::sdl::new_canvas,
     canvas::CanvasBox,
     cli::{Algorithm, ARGS},
     interaction::Interaction,
-    sdl::new_canvas,
-    suffix_array as sa,
-    viz::Viz,
 };
 
 fn main() -> ! {
